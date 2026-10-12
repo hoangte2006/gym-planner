@@ -1,0 +1,242 @@
+graph EER {
+  graph [fontname="Helvetica", nodesep=0.55, ranksep=0.85, splines=true, overlap=false, pad="0.4,0.6"];
+  node  [fontname="Helvetica", fontsize=11];
+  edge  [fontname="Helvetica", fontsize=10, color="#888888"];
+
+  /* ================= ENTITY (record box: title + PK/FK rows) ================= */
+  node [shape=none, margin=0];
+
+  VISITOR [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>VISITOR</B></TD></TR>
+      <TR><TD ALIGN="LEFT">Visitor_ID (PK)</TD></TR>
+      <TR><TD ALIGN="LEFT">First_Name / Last_Name</TD></TR>
+      <TR><TD ALIGN="LEFT">Phone (UQ)</TD></TR>
+    </TABLE>>];
+
+  MEMBER [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>MEMBER</B> <FONT POINT-SIZE="9">(subclass)</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Visitor_ID (PK, FK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Email (UQ)</TD></TR>
+      <TR><TD ALIGN="LEFT">Birth_Date</TD></TR>
+      <TR><TD ALIGN="LEFT">Photo</TD></TR>
+      <TR><TD ALIGN="LEFT">Registration_Date</TD></TR>
+    </TABLE>>];
+
+  DAILY_PASS_TICKET [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>DAILY_PASS_TICKET</B> <FONT POINT-SIZE="9">(subclass)</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Visitor_ID (PK, FK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Visit_Date</TD></TR>
+      <TR><TD ALIGN="LEFT">Daily_Rate</TD></TR>
+    </TABLE>>];
+
+  MEMBERSHIP_PLAN [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>MEMBERSHIP_PLAN</B></TD></TR>
+      <TR><TD ALIGN="LEFT">Plan_ID (PK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Plan_Name (UQ)</TD></TR>
+      <TR><TD ALIGN="LEFT">Duration_Months</TD></TR>
+      <TR><TD ALIGN="LEFT">Price</TD></TR>
+      <TR><TD ALIGN="LEFT">Description</TD></TR>
+    </TABLE>>];
+
+  MEMBERSHIP [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>MEMBERSHIP</B></TD></TR>
+      <TR><TD ALIGN="LEFT">Membership_ID (PK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Visitor_ID (FK -&gt; MEMBER)</TD></TR>
+      <TR><TD ALIGN="LEFT">Plan_ID (FK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Start_Date / End_Date</TD></TR>
+      <TR><TD ALIGN="LEFT">Status</TD></TR>
+    </TABLE>>];
+
+  BILLING_LOG [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>BILLING_LOG</B></TD></TR>
+      <TR><TD ALIGN="LEFT">Bill_ID (PK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Visitor_ID (FK, NOT NULL)</TD></TR>
+      <TR><TD ALIGN="LEFT">Membership_ID (FK, NULL)</TD></TR>
+      <TR><TD ALIGN="LEFT">Amount_Paid</TD></TR>
+      <TR><TD ALIGN="LEFT">Billing_Status</TD></TR>
+      <TR><TD ALIGN="LEFT">Invoice/Due/Payment_Date</TD></TR>
+    </TABLE>>];
+
+  STAFF [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>STAFF</B></TD></TR>
+      <TR><TD ALIGN="LEFT">Staff_ID (PK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Full_Name / Phone (UQ)</TD></TR>
+      <TR><TD ALIGN="LEFT">Role (Trainer/Receptionist/Manager)</TD></TR>
+      <TR><TD ALIGN="LEFT">Hire_Date / Salary</TD></TR>
+    </TABLE>>];
+
+  TRAINER [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>TRAINER</B> <FONT POINT-SIZE="9">(subclass)</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Staff_ID (PK, FK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Specialty</TD></TR>
+      <TR><TD ALIGN="LEFT">Certification</TD></TR>
+    </TABLE>>];
+
+  RECEPTIONIST [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>RECEPTIONIST</B> <FONT POINT-SIZE="9">(subclass)</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Staff_ID (PK, FK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Shift_Type</TD></TR>
+    </TABLE>>];
+
+  ROOM [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>ROOM</B></TD></TR>
+      <TR><TD ALIGN="LEFT">Room_ID (PK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Room_Name (UQ)</TD></TR>
+      <TR><TD ALIGN="LEFT">Capacity</TD></TR>
+      <TR><TD ALIGN="LEFT">Floor_Location</TD></TR>
+    </TABLE>>];
+
+  CLASS [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>CLASS</B> <FONT POINT-SIZE="9">(subclass)</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Session_ID (PK, FK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Class_Name</TD></TR>
+      <TR><TD ALIGN="LEFT">Max_Capacity</TD></TR>
+    </TABLE>>];
+
+  SESSION [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>SESSION</B></TD></TR>
+      <TR><TD ALIGN="LEFT">Session_ID (PK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Session_Type ('Class' / 'PT')</TD></TR>
+      <TR><TD ALIGN="LEFT">Room_ID (FK, NOT NULL)</TD></TR>
+      <TR><TD ALIGN="LEFT">Trainer_ID (FK, NOT NULL)</TD></TR>
+      <TR><TD ALIGN="LEFT">Start_Time / End_Time</TD></TR>
+    </TABLE>>];
+
+  CLASS_REGISTRATION [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#EEEDFE">
+      <TR><TD BGCOLOR="#CECBF6"><B>CLASS_REGISTRATION</B></TD></TR>
+      <TR><TD ALIGN="LEFT">Session_ID (PK, FK -&gt; CLASS)</TD></TR>
+      <TR><TD ALIGN="LEFT">Visitor_ID (PK, FK -&gt; MEMBER)</TD></TR>
+      <TR><TD ALIGN="LEFT">Registration_Date / Attendance_Status</TD></TR>
+    </TABLE>>];
+
+  PT_BOOKING [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>PT_BOOKING</B> <FONT POINT-SIZE="9">(subclass)</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Session_ID (PK, FK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Visitor_ID (FK -&gt; MEMBER, NOT NULL)</TD></TR>
+      <TR><TD ALIGN="LEFT">Booking_Status</TD></TR>
+    </TABLE>>];
+
+  EQUIPMENT [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#E6F1FB">
+      <TR><TD BGCOLOR="#B5D4F4"><B>EQUIPMENT</B></TD></TR>
+      <TR><TD ALIGN="LEFT">Equipment_ID (PK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Equipment_Name</TD></TR>
+      <TR><TD ALIGN="LEFT">Operational_Status</TD></TR>
+      <TR><TD ALIGN="LEFT">Purchase_Date</TD></TR>
+      <TR><TD ALIGN="LEFT">Room_ID (FK)</TD></TR>
+    </TABLE>>];
+
+  MAINTENANCE_LOG [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2"><TR><TD>
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#FCEBEB">
+      <TR><TD BGCOLOR="#F7C1C1"><B>MAINTENANCE_LOG</B> <FONT POINT-SIZE="9">(weak)</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Equipment_ID (PK, FK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Log_no (PK, partial key, NO default)</TD></TR>
+      <TR><TD ALIGN="LEFT">Maintenance_Date / Cost</TD></TR>
+      <TR><TD ALIGN="LEFT">Description</TD></TR>
+      <TR><TD ALIGN="LEFT">Logged_By (FK -&gt; STAFF)</TD></TR>
+    </TABLE>
+    </TD></TR></TABLE>>];
+
+  SESSION_EQUIPMENT_USAGE [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#EEEDFE">
+      <TR><TD BGCOLOR="#CECBF6"><B>SESSION_EQUIPMENT_USAGE</B></TD></TR>
+      <TR><TD ALIGN="LEFT">Usage_ID (PK)</TD></TR>
+      <TR><TD ALIGN="LEFT">Session_ID (FK, NOT NULL)</TD></TR>
+      <TR><TD ALIGN="LEFT">Equipment_ID (FK, NOT NULL)</TD></TR>
+      <TR><TD ALIGN="LEFT">Reserved_From / Reserved_To</TD></TR>
+    </TABLE>>];
+
+  /* ================= RELATIONSHIP DIAMONDS ================= */
+  node [shape=diamond, style=filled, fillcolor="#FAC775", fontsize=10, margin=0.06];
+
+  HOLDS; CLASSIFIED_UNDER; BILLED_TO; GENERATES;
+  LEADS; HOSTS; REGISTER;
+  BOOKS_PT; USES;
+  CONTAINS; SIGNS;
+  RESERVES;
+
+  node [shape=diamond, style=filled, fillcolor="#F7C1C1"];
+  LOGGED_FOR [peripheries=2];
+
+
+  /* ================= DISJOINT SPECIALIZATION CIRCLES ================= */
+  node [shape=circle, style=filled, fillcolor="#D3D1C7", width=0.4, height=0.4, fixedsize=true, fontsize=11];
+  d_visitor [label="d"];
+  d_staff   [label="d"];
+  d_session [label="d"];
+
+  /* ================= EDGES =================
+     "class=total" edges get a second parallel stroke drawn by a post-processing
+     script over the rendered SVG (true double line, without disturbing dot's
+     own routing the way duplicate port-pinned edges did). */
+  edge [style=solid, penwidth=1];
+
+  /* Disjoint specialization: VISITOR -> d  is TOTAL (every visitor is classified).
+     d -> {MEMBER, TICKET} legs stay single lines (standard Chen/Elmasri convention: the double
+     line belongs on the superclass-to-circle edge only, not on each subclass leg). */
+  VISITOR -- d_visitor [color="#888888:#888888"];
+  d_visitor -- MEMBER;
+  d_visitor -- DAILY_PASS_TICKET;
+
+  /* Disjoint specialization: STAFF -> d -> {TRAINER, RECEPTIONIST}  (PARTIAL: single line, Manager has no subclass) */
+  STAFF -- d_staff;
+  d_staff -- TRAINER;
+  d_staff -- RECEPTIONIST;
+
+  /* Disjoint specialization: SESSION -> d -> {CLASS, PT_BOOKING}  (TOTAL: double line, every session is a class or a PT booking) */
+  SESSION -- d_session [color="#888888:#888888"];
+  d_session -- CLASS;
+  d_session -- PT_BOOKING;
+
+  /* Membership domain */
+  MEMBER -- HOLDS [taillabel="1", labeldistance=2];
+  HOLDS -- MEMBERSHIP [color="#888888:#888888", headlabel="N", labeldistance=2];
+  MEMBERSHIP_PLAN -- CLASSIFIED_UNDER [taillabel="1", labeldistance=2];
+  CLASSIFIED_UNDER -- MEMBERSHIP [color="#888888:#888888", headlabel="N", labeldistance=2];
+  VISITOR -- BILLED_TO [taillabel="1", labeldistance=2];
+  BILLED_TO -- BILLING_LOG [color="#888888:#888888", headlabel="N", labeldistance=2];
+  MEMBERSHIP -- GENERATES [taillabel="1", labeldistance=2];
+  GENERATES -- BILLING_LOG [headlabel="N", labeldistance=2];
+
+  /* Training & scheduling domain */
+  TRAINER -- LEADS [taillabel="1", labeldistance=2];
+  LEADS -- SESSION [color="#888888:#888888", headlabel="N", labeldistance=2];
+  ROOM -- HOSTS [taillabel="1", labeldistance=2];
+  HOSTS -- SESSION [color="#888888:#888888", headlabel="N", labeldistance=2];
+  CLASS -- REGISTER [taillabel="N", labeldistance=2];
+  REGISTER -- MEMBER [headlabel="M", labeldistance=2];
+  REGISTER -- CLASS_REGISTRATION [style=dashed, color="#666666", dir=none, arrowhead=none];
+
+  MEMBER -- BOOKS_PT [taillabel="1", labeldistance=2];
+  BOOKS_PT -- PT_BOOKING [color="#888888:#888888", headlabel="N", labeldistance=2.5];
+
+  /* Facility & maintenance domain */
+  ROOM -- CONTAINS [taillabel="1", labeldistance=2];
+  CONTAINS -- EQUIPMENT [headlabel="N", labeldistance=2];
+  EQUIPMENT -- LOGGED_FOR [taillabel="1", labeldistance=2];
+  LOGGED_FOR -- MAINTENANCE_LOG [color="#888888:#888888", headlabel="N", labeldistance=2];
+  STAFF -- SIGNS [taillabel="1", labeldistance=2];
+  SIGNS -- MAINTENANCE_LOG [color="#888888:#888888", headlabel="N", labeldistance=2];
+
+  /* Session equipment usage: one mandatory link to SESSION */
+  SESSION -- USES [taillabel="1", labeldistance=2];
+  USES -- SESSION_EQUIPMENT_USAGE [color="#888888:#888888", headlabel="N", labeldistance=2];
+  EQUIPMENT -- RESERVES [taillabel="1", labeldistance=2];
+  RESERVES -- SESSION_EQUIPMENT_USAGE [color="#888888:#888888", headlabel="N", labeldistance=2];
+
+}

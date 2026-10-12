@@ -1,0 +1,181 @@
+@startuml
+' Physical Database Schema (IE Crow's Foot Notation) - types synced with Data Dictionary
+hide circle
+skinparam linetype polyline
+
+entity "VISITOR" as VISITOR {
+  *Visitor_ID : INT <<PK>>
+  --
+  First_Name : VARCHAR(50)
+  Last_Name : VARCHAR(50)
+  Phone : VARCHAR(15) <<UQ>>
+}
+
+entity "MEMBER" as MEMBER {
+  *Visitor_ID : INT <<PK, FK>>
+  --
+  Email : VARCHAR(100) <<UQ>>
+  Birth_Date : DATE
+  Photo : VARBINARY(MAX)
+  Registration_Date : DATETIME
+}
+
+entity "DAILY_PASS_TICKET" as DAILY_PASS_TICKET {
+  *Visitor_ID : INT <<PK, FK>>
+  --
+  Visit_Date : DATE
+  Daily_Rate : DECIMAL(10,2)
+}
+
+entity "MEMBERSHIP_PLAN" as MEMBERSHIP_PLAN {
+  *Plan_ID : INT <<PK>>
+  --
+  Plan_Name : VARCHAR(50) <<UQ>>
+  Duration_Months : INT
+  Price : DECIMAL(10,2)
+  Description : VARCHAR(255)
+}
+
+entity "MEMBERSHIP" as MEMBERSHIP {
+  *Membership_ID : INT <<PK>>
+  --
+  Visitor_ID : INT <<FK>>
+  Plan_ID : INT <<FK>>
+  Start_Date : DATE
+  End_Date : DATE
+  Status : VARCHAR(20)
+}
+
+entity "BILLING_LOG" as BILLING_LOG {
+  *Bill_ID : INT <<PK>>
+  --
+  Visitor_ID : INT <<FK>>
+  Membership_ID : INT <<FK>>
+  Invoice_Date : DATETIME
+  Due_Date : DATE
+  Payment_Date : DATETIME
+  Amount_Paid : DECIMAL(10,2)
+  Billing_Status : VARCHAR(20)
+}
+
+entity "STAFF" as STAFF {
+  *Staff_ID : INT <<PK>>
+  --
+  Full_Name : VARCHAR(100)
+  Phone : VARCHAR(15) <<UQ>>
+  Role : VARCHAR(30)
+  Hire_Date : DATE
+  Salary : DECIMAL(10,2)
+}
+
+entity "TRAINER" as TRAINER {
+  *Staff_ID : INT <<PK, FK>>
+  --
+  Specialty : VARCHAR(50)
+  Certification : VARCHAR(100)
+}
+
+entity "RECEPTIONIST" as RECEPTIONIST {
+  *Staff_ID : INT <<PK, FK>>
+  --
+  Shift_Type : VARCHAR(20)
+}
+
+entity "ROOM" as ROOM {
+  *Room_ID : INT <<PK>>
+  --
+  Room_Name : VARCHAR(50) <<UQ>>
+  Capacity : INT
+  Floor_Location : VARCHAR(30)
+}
+
+entity "SESSION" as SESSION {
+  *Session_ID : INT <<PK>>
+  --
+  Session_Type : VARCHAR(10)
+  Room_ID : INT <<FK>>
+  Trainer_ID : INT <<FK>>
+  Start_Time : DATETIME
+  End_Time : DATETIME
+}
+
+entity "CLASS" as CLASS {
+  *Session_ID : INT <<PK, FK>>
+  --
+  Class_Name : VARCHAR(50)
+  Max_Capacity : INT
+}
+
+entity "CLASS_REGISTRATION" as CLASS_REGISTRATION {
+  *Session_ID : INT <<PK, FK>>
+  *Visitor_ID : INT <<PK, FK>>
+  --
+  Registration_Date : DATETIME
+  Attendance_Status : VARCHAR(20)
+}
+
+entity "PT_BOOKING" as PT_BOOKING {
+  *Session_ID : INT <<PK, FK>>
+  --
+  Visitor_ID : INT <<FK>>
+  Booking_Status : VARCHAR(20)
+}
+
+entity "EQUIPMENT" as EQUIPMENT {
+  *Equipment_ID : INT <<PK>>
+  --
+  Equipment_Name : VARCHAR(100)
+  Room_ID : INT <<FK>>
+  Operational_Status : VARCHAR(20)
+  Purchase_Date : DATE
+}
+
+entity "MAINTENANCE_LOG" as MAINTENANCE_LOG {
+  *Equipment_ID : INT <<PK, FK>>
+  *Log_no : INT <<PK>>
+  --
+  Maintenance_Date : DATE
+  Cost : DECIMAL(10,2)
+  Description : VARCHAR(255)
+  Logged_By : INT <<FK>>
+}
+
+entity "SESSION_EQUIPMENT_USAGE" as SESSION_EQUIPMENT_USAGE {
+  *Usage_ID : INT <<PK>>
+  --
+  Equipment_ID : INT <<FK>>
+  Session_ID : INT <<FK>>
+  Reserved_From : DATETIME
+  Reserved_To : DATETIME
+}
+
+' Relationships
+VISITOR ||--o| MEMBER : "isa (d)"
+VISITOR ||--o| DAILY_PASS_TICKET : "isa (d)"
+STAFF ||--o| TRAINER : "isa (d)"
+STAFF ||--o| RECEPTIONIST : "isa (d)"
+
+MEMBER ||--o{ MEMBERSHIP : "holds"
+MEMBERSHIP_PLAN ||--o{ MEMBERSHIP : "defines"
+
+VISITOR ||--o{ BILLING_LOG : "pays"
+MEMBERSHIP |o--o{ BILLING_LOG : "generates"
+
+ROOM ||--o{ SESSION : "hosts"
+TRAINER ||--o{ SESSION : "leads"
+SESSION ||--o| CLASS : "isa (d)"
+SESSION ||--o| PT_BOOKING : "isa (d)"
+
+CLASS ||--o{ CLASS_REGISTRATION : "has"
+MEMBER ||--o{ CLASS_REGISTRATION : "enrolls"
+
+MEMBER ||--o{ PT_BOOKING : "books"
+
+ROOM |o--o{ EQUIPMENT : "contains"
+EQUIPMENT ||--o{ MAINTENANCE_LOG : "has_logs"
+STAFF ||--o{ MAINTENANCE_LOG : "authorizes"
+
+EQUIPMENT ||--o{ SESSION_EQUIPMENT_USAGE : "allocated"
+SESSION ||--o{ SESSION_EQUIPMENT_USAGE : "uses"
+
+@enduml

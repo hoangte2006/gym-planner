@@ -1,0 +1,24 @@
+# Build
+target/
+*.jar
+!.mvn/wrapper/*.jar
+
+# Cấu hình cục bộ (chứa mật khẩu DB) - KHÔNG commit
+config.local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+nbproject/
+
+# OS / Office lock
+.DS_Store
+Thumbs.db
+~$*
+
+# Log
+*.log
