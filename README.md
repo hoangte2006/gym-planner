@@ -17,6 +17,10 @@
 3. **Tạo file cấu hình**: sao chép `config.example.properties` thành `config.local.properties`
    và điền `db.password` (trùng mật khẩu đã dùng ở bước 2). File này không được commit.
 
+## Đăng nhập
+Đăng nhập bằng **số điện thoại nhân viên** (cột `STAFF.Phone`) và mật khẩu chung, mặc định `gym123`
+(đổi được qua `AuthService.changePassword`). Ví dụ: Quản lý `0901000005`, Lễ tân `0901000003`, HLV `0901000001`.
+
 ## Chạy
 ```bash
 mvn verify                       # biên dịch + test + đóng gói JAR
@@ -33,4 +37,5 @@ Hoặc chạy lớp `com.gym.app.Main` trong IDE.
 | `facility/` | TV4 | Nhân sự & cơ sở vật chất |
 | `scheduling/` | TV5 | Lịch tập |
 
-Luồng gọi một chiều: UI → Service → DAO → DB. Xem `docs/ke_hoach/` để biết quy trình Git và phân công.
+Luồng gọi một chiều: UI → Service → DAO → DB. Xem `docs/ke_hoach/` để biết quy trình Git và phân công, và **`docs/CORE_GUIDE.md`** để biết cách dùng DAO, UiKit,
+Validator, ErrorTranslator khi viết module.

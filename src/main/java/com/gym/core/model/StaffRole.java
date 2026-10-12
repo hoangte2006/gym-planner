@@ -1,35 +1,37 @@
 package com.gym.core.model;
 
 /** Vai trò nhân viên, khớp CHECK constraint CK_STAFF_Role của bảng STAFF. */
-public enum StaffRole {
-    MANAGER("Manager", "Quản lý"),
-    RECEPTIONIST("Receptionist", "Lễ tân"),
-    TRAINER("Trainer", "Huấn luyện viên");
+public enum StaffRole implements DbEnum {
+    MANAGER("Manager", "Quản lý", "#6A1B9A"),
+    RECEPTIONIST("Receptionist", "Lễ tân", "#1565C0"),
+    TRAINER("Trainer", "Huấn luyện viên", "#2E7D32");
 
     private final String dbValue;
     private final String label;
+    private final String colorHex;
 
-    StaffRole(String dbValue, String label) {
+    StaffRole(String dbValue, String label, String colorHex) {
         this.dbValue = dbValue;
         this.label = label;
+        this.colorHex = colorHex;
     }
 
-    /** Giá trị lưu trong cột STAFF.Role. */
+    @Override
     public String getDbValue() {
         return dbValue;
     }
 
-    /** Nhãn tiếng Việt hiển thị trên giao diện. */
+    @Override
     public String getLabel() {
         return label;
     }
 
-    public static StaffRole fromDb(String value) {
-        for (StaffRole r : values()) {
-            if (r.dbValue.equalsIgnoreCase(value)) {
-                return r;
-            }
-        }
-        throw new IllegalArgumentException("Vai trò không hợp lệ: " + value);
+    @Override
+    public String getColorHex() {
+        return colorHex;
+    }
+
+    public static StaffRole fromDb(String dbValue) {
+        return DbEnum.fromDb(StaffRole.class, dbValue);
     }
 }

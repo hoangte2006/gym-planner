@@ -1,12 +1,14 @@
 package com.gym.app;
 
 import com.gym.core.Config;
+import com.gym.core.ui.Dialogs;
 import com.gym.core.ui.PlaceholderPanel;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -72,6 +74,18 @@ public class MainFrame extends JFrame {
             menu.add(Box.createVerticalStrut(6));
         }
         menu.add(Box.createVerticalGlue());
+
+        JButton logout = new JButton("Đăng xuất");
+        logout.setAlignmentX(LEFT_ALIGNMENT);
+        logout.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        logout.addActionListener(e -> {
+            if (Dialogs.confirm(this, "Bạn muốn đăng xuất?")) {
+                Session.logout();
+                dispose();
+                new LoginFrame().setVisible(true);
+            }
+        });
+        menu.add(logout);
         return menu;
     }
 

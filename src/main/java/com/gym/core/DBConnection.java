@@ -23,6 +23,8 @@ public final class DBConnection {
                 + ";databaseName=" + c.get("db.name", "GymPlanner")
                 + ";encrypt=" + c.getBoolean("db.encrypt", false)
                 + ";trustServerCertificate=" + c.getBoolean("db.trustServerCertificate", true)
+                // Các cột chữ trong DB là VARCHAR: gửi tham số dạng VARCHAR để chỉ mục được dùng (nhanh hơn)
+                + ";sendStringParametersAsUnicode=false"
                 + ";loginTimeout=" + LOGIN_TIMEOUT_SECONDS;
         try {
             return DriverManager.getConnection(url, c.get("db.user", ""), c.get("db.password", ""));

@@ -1,20 +1,20 @@
 package com.gym.app;
 
-import com.formdev.flatlaf.FlatLightLaf;
 import com.gym.core.DBConnection;
 import com.gym.core.exception.DataAccessException;
+import com.gym.core.ui.Theme;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
-/** Điểm khởi động: giao diện FlatLaf, kiểm tra kết nối DB rồi mở cửa sổ chính. */
+/** Điểm khởi động: giao diện FlatLaf, kiểm tra kết nối DB, rồi mở màn hình đăng nhập. */
 public final class Main {
 
     private Main() {
     }
 
     public static void main(String[] args) {
-        FlatLightLaf.setup();
+        Theme.install();
         SwingUtilities.invokeLater(() -> {
             try {
                 DBConnection.test();
@@ -23,7 +23,7 @@ public final class Main {
                         "Không kết nối được cơ sở dữ liệu", JOptionPane.ERROR_MESSAGE);
                 System.exit(1);
             }
-            new MainFrame().setVisible(true);
+            new LoginFrame().setVisible(true);
         });
     }
 }

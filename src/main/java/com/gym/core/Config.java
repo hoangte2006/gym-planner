@@ -8,6 +8,10 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -37,7 +41,8 @@ public final class Config {
         return instance;
     }
 
-    static Config load(Path file) {
+    /** Đọc một file cấu hình cụ thể (dùng trong kiểm thử; ứng dụng dùng get()). */
+    public static Config load(Path file) {
         if (!Files.isRegularFile(file)) {
             throw new DataAccessException("Không tìm thấy file cấu hình " + file.toAbsolutePath()
                     + ". Hãy sao chép config.example.properties thành " + DEFAULT_FILE
@@ -72,5 +77,30 @@ public final class Config {
 
     public Path getSource() {
         return source;
+    }
+
+    /**
+     * Ghi một số khóa vào file cấu hình (giữ nguyên các dòng khác), đồng thời cập nhật bản đang dùng.
+     * Dùng khi đổi mật khẩu đăng nhập.
+     */
+    public synchronized void save(Map<String, String> values) {
+        Map<String, String> pending = new LinkedHashMap<>(values);
+        List<String> lines = new ArrayList<>();
+        try {
+            for (String line : Files.readAllLines(source, StandardCharsets.UTF_8)) {
+                String key = line.contains("=") && !line.trim().startsWith("#")
+                        ? line.substring(0, line.indexOf('=')).trim() : null;
+                if (key != null && pending.containsKey(key)) {
+                    lines.add(key + "=" + pending.remove(key));
+                } else {
+                    lines.add(line);
+                }
+            }
+            pending.forEach((k, v) -> lines.add(k + "=" + v));
+            Files.write(source, lines, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new DataAccessException("Không ghi được file cấu hình " + source.toAbsolutePath(), e);
+        }
+        values.forEach(props::setProperty);
     }
 }

@@ -22,3 +22,6 @@ Thumbs.db
 
 # Log
 *.log
+
+# VS Code Local History extension
+.history/
