@@ -2,12 +2,12 @@ package com.gym.scheduling;
 
 import com.gym.app.AppModule;
 import com.gym.core.model.StaffRole;
-import com.gym.core.ui.PlaceholderPanel;
+import com.gym.scheduling.ui.WeeklySchedulePanel;
 
 import javax.swing.JPanel;
 import java.util.Set;
 
-/** Module Lịch tập (TV5). Chủ module thay nội dung createPanel() bằng màn hình thật. */
+/** Module Lịch tập (TV5). */
 public class SchedulingModule implements AppModule {
 
     @Override
@@ -27,6 +27,6 @@ public class SchedulingModule implements AppModule {
 
     @Override
     public JPanel createPanel() {
-        return new PlaceholderPanel(getTitle(), "TV5");
+        return new WeeklySchedulePanel();
     }
 }
