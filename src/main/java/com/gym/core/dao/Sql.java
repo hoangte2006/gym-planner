@@ -42,7 +42,7 @@ public final class Sql {
     }
 
     // ---------- Ghi vào PreparedStatement (hỗ trợ NULL) ----------
-
+    // int index là vị trí dấu ? trong câu SQL, bắt đầu từ 1.
     public static void setDate(PreparedStatement ps, int index, LocalDate value) throws SQLException {
         if (value == null) {
             ps.setNull(index, Types.DATE);

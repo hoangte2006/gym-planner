@@ -14,6 +14,7 @@ public final class Theme {
     public static final Color WARNING = new Color(0xEF6C00);
     public static final Color DANGER = new Color(0xC62828);
     public static final Color MUTED = new Color(0x757575);
+    public static final Color INFO = new Color(0x6A1B9A);      // tím, trùng màu "Lớp tập" (SessionType.CLASS)
 
     private static boolean installed;
 
