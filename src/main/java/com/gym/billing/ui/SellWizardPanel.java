@@ -1,14 +1,14 @@
 package com.gym.billing.ui;
 
-import com.gym.billing.dao.BillingTransactionDao;
-import com.gym.billing.model.MemberChoice;
-import com.gym.billing.model.SalePreview;
-import com.gym.billing.service.BillingService;
-import com.gym.core.DateTimeUtils;
-import com.gym.core.model.MembershipPlan;
-import com.gym.core.ui.Async;
-import com.gym.core.ui.Dialogs;
-import com.gym.core.ui.Toast;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Image;
+import java.io.ByteArrayInputStream;
+import java.time.LocalDate;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -20,23 +20,35 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.Image;
-import java.io.ByteArrayInputStream;
-import java.time.LocalDate;
-import java.util.List;
 
-/** Wizard 3 bước bán mới/gia hạn: chọn hội viên → chọn gói và xem ngày → xác nhận giao dịch. */
+import com.gym.billing.model.MemberChoice;
+import com.gym.billing.model.SalePreview;
+import com.gym.billing.service.BillingService;
+import com.gym.core.DateTimeUtils;
+import com.gym.core.model.MembershipPlan;
+import com.gym.core.ui.Async;
+import com.gym.core.ui.Dialogs;
+
+/**
+ * Wizard 3 bước bán mới/gia hạn: chọn hội viên → chọn gói và xem ngày → xác
+ * nhận giao dịch.
+ */
 public class SellWizardPanel extends JPanel {
+
     private enum Mode {
         SELL("Bán gói mới", false), RENEW("Gia hạn gói", true);
-        final String label; final boolean renewal;
-        Mode(String label, boolean renewal) { this.label = label; this.renewal = renewal; }
-        @Override public String toString() { return label; }
+        final String label;
+        final boolean renewal;
+
+        Mode(String label, boolean renewal) {
+            this.label = label;
+            this.renewal = renewal;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
     }
 
     private final BillingService service = new BillingService();
@@ -76,75 +88,140 @@ public class SellWizardPanel extends JPanel {
             JLabel label = new JLabel(display);
             label.setOpaque(true);
             label.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
-            if (selected) { label.setBackground(list.getSelectionBackground()); label.setForeground(list.getSelectionForeground()); }
-            if (value != null && !value.hasPhoto()) label.setForeground(selected ? list.getSelectionForeground() : new java.awt.Color(0xB71C1C));
+            if (selected) {
+                label.setBackground(list.getSelectionBackground());
+                label.setForeground(list.getSelectionForeground());
+            }
+            if (value != null && !value.hasPhoto()) {
+                label.setForeground(selected ? list.getSelectionForeground() : new java.awt.Color(0xB71C1C));
+            }
             return label;
         });
         plans.setRenderer((list, value, index, selected, focus) -> {
             JLabel label = new JLabel(value == null ? "— Chọn gói —"
                     : value.getPlanName() + " · " + value.getDurationMonths() + " tháng · " + BillingFormat.money(value.getPrice()));
-            label.setOpaque(true); label.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
-            if (selected) { label.setBackground(list.getSelectionBackground()); label.setForeground(list.getSelectionForeground()); }
+            label.setOpaque(true);
+            label.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
+            if (selected) {
+                label.setBackground(list.getSelectionBackground());
+                label.setForeground(list.getSelectionForeground());
+            }
             return label;
         });
-        members.addActionListener(e -> { if (!loadingMembers) updateSelectedMember(); });
+        members.addActionListener(e -> {
+            if (!loadingMembers) {
+                updateSelectedMember();
+
+            }
+        });
         helpPhoto.addActionListener(e -> Dialogs.info(this,
                 "Hội viên bắt buộc phải có ảnh để mua/gia hạn gói.\nHãy mở module Hội viên trong menu, tìm hội viên này, chọn Sửa/Thêm ảnh, lưu ảnh JPG/PNG rồi quay lại đây và bấm Tải lại."));
         nextMember.setEnabled(false);
         nextMember.addActionListener(e -> goToPlanStep());
-        mode.addActionListener(e -> { preview.setText("Đã đổi loại giao dịch. Bấm Xem xác nhận để tính lại ngày."); currentPreview = null; });
-        plans.addActionListener(e -> { currentPreview = null; });
-        JButton reload = new JButton("Tải lại danh sách"); reload.addActionListener(e -> loadMembers());
+        mode.addActionListener(e -> {
+            preview.setText("Đã đổi loại giao dịch. Bấm Xem xác nhận để tính lại ngày.");
+            currentPreview = null;
+        });
+        plans.addActionListener(e -> {
+            currentPreview = null;
+        });
+        JButton reload = new JButton("Tải lại danh sách");
+        reload.addActionListener(e -> loadMembers());
+    }
+    private boolean initialized = false;
+
+    public void initialize() {
+        if (initialized) {
+            return;
+        }
+
+        initialized = true;
+
         loadMembers();
-        Async.run(this, () -> service.findPlans(), this::populatePlans);
+
+        Async.run(
+                this,
+                () -> service.findPlans(),
+                this::populatePlans
+        );
     }
 
     private JPanel buildMemberStep() {
         JPanel root = new JPanel(new BorderLayout(12, 12));
         JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        searchRow.add(new JLabel("Tìm tên / SĐT / mã hội viên:")); searchRow.add(search);
-        JButton find = new JButton("Tìm"); find.addActionListener(e -> loadMembers());
+        searchRow.add(new JLabel("Tìm tên / SĐT / mã hội viên:"));
+        searchRow.add(search);
+        JButton find = new JButton("Tìm");
+        find.addActionListener(e -> loadMembers());
         search.addActionListener(e -> loadMembers());
-        JButton reload = new JButton("Tải lại"); reload.addActionListener(e -> loadMembers());
-        searchRow.add(find); searchRow.add(reload);
-        JPanel selector = new JPanel(); selector.setLayout(new BoxLayout(selector, BoxLayout.Y_AXIS));
+        JButton reload = new JButton("Tải lại");
+        reload.addActionListener(e -> loadMembers());
+        searchRow.add(find);
+        searchRow.add(reload);
+        JPanel selector = new JPanel();
+        selector.setLayout(new BoxLayout(selector, BoxLayout.Y_AXIS));
         selector.setBorder(BorderFactory.createTitledBorder("1. Chọn hội viên (ảnh bắt buộc)"));
-        selector.add(members); selector.add(Box.createVerticalStrut(10));
+        selector.add(members);
+        selector.add(Box.createVerticalStrut(10));
         memberInfo.setVerticalAlignment(JLabel.TOP);
         memberInfo.setPreferredSize(new Dimension(520, 90));
-        selector.add(memberInfo); selector.add(Box.createVerticalStrut(8));
-        selector.add(helpPhoto); selector.add(Box.createVerticalGlue()); selector.add(nextMember);
+        selector.add(memberInfo);
+        selector.add(Box.createVerticalStrut(8));
+        selector.add(helpPhoto);
+        selector.add(Box.createVerticalGlue());
+        selector.add(nextMember);
         photo.setPreferredSize(new Dimension(165, 210));
         photo.setBorder(BorderFactory.createEtchedBorder());
-        JPanel photoPanel = new JPanel(new BorderLayout()); photoPanel.setBorder(BorderFactory.createTitledBorder("Ảnh hồ sơ"));
+        JPanel photoPanel = new JPanel(new BorderLayout());
+        photoPanel.setBorder(BorderFactory.createTitledBorder("Ảnh hồ sơ"));
         photoPanel.add(photo, BorderLayout.CENTER);
-        root.add(searchRow, BorderLayout.NORTH); root.add(selector, BorderLayout.CENTER); root.add(photoPanel, BorderLayout.EAST);
+        root.add(searchRow, BorderLayout.NORTH);
+        root.add(selector, BorderLayout.CENTER);
+        root.add(photoPanel, BorderLayout.EAST);
         return root;
     }
 
     private JPanel buildPlanStep() {
         JPanel root = new JPanel(new BorderLayout(12, 12));
-        JPanel fields = new JPanel(); fields.setLayout(new BoxLayout(fields, BoxLayout.Y_AXIS));
+        JPanel fields = new JPanel();
+        fields.setLayout(new BoxLayout(fields, BoxLayout.Y_AXIS));
         fields.setBorder(BorderFactory.createTitledBorder("2. Chọn thao tác và gói tập"));
-        fields.add(new JLabel("Loại giao dịch")); fields.add(mode); fields.add(Box.createVerticalStrut(12));
-        fields.add(new JLabel("Bảng giá gói tập")); fields.add(plans); fields.add(Box.createVerticalStrut(12));
-        preview.setVerticalAlignment(JLabel.TOP); fields.add(preview); fields.add(Box.createVerticalGlue());
-        JButton back = new JButton("← Quay lại"); back.addActionListener(e -> showStep("member"));
-        JButton next = new JButton("Xem xác nhận →"); next.addActionListener(e -> calculatePreview());
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT)); actions.add(back); actions.add(next);
-        root.add(fields, BorderLayout.CENTER); root.add(actions, BorderLayout.SOUTH);
+        fields.add(new JLabel("Loại giao dịch"));
+        fields.add(mode);
+        fields.add(Box.createVerticalStrut(12));
+        fields.add(new JLabel("Bảng giá gói tập"));
+        fields.add(plans);
+        fields.add(Box.createVerticalStrut(12));
+        preview.setVerticalAlignment(JLabel.TOP);
+        fields.add(preview);
+        fields.add(Box.createVerticalGlue());
+        JButton back = new JButton("← Quay lại");
+        back.addActionListener(e -> showStep("member"));
+        JButton next = new JButton("Xem xác nhận →");
+        next.addActionListener(e -> calculatePreview());
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actions.add(back);
+        actions.add(next);
+        root.add(fields, BorderLayout.CENTER);
+        root.add(actions, BorderLayout.SOUTH);
         return root;
     }
 
     private JPanel buildConfirmStep() {
         JPanel root = new JPanel(new BorderLayout(12, 12));
-        JPanel details = new JPanel(new BorderLayout()); details.setBorder(BorderFactory.createTitledBorder("3. Kiểm tra trước khi tạo"));
-        summary.setVerticalAlignment(JLabel.TOP); summary.setFont(summary.getFont().deriveFont(14f)); details.add(summary, BorderLayout.NORTH);
+        JPanel details = new JPanel(new BorderLayout());
+        details.setBorder(BorderFactory.createTitledBorder("3. Kiểm tra trước khi tạo"));
+        summary.setVerticalAlignment(JLabel.TOP);
+        summary.setFont(summary.getFont().deriveFont(14f));
+        details.add(summary, BorderLayout.NORTH);
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton back = new JButton("← Sửa thông tin"); back.addActionListener(e -> showStep("plan"));
+        JButton back = new JButton("← Sửa thông tin");
+        back.addActionListener(e -> showStep("plan"));
         confirm.addActionListener(e -> submitSale());
-        actions.add(back); actions.add(confirm);
-        root.add(details, BorderLayout.CENTER); root.add(actions, BorderLayout.SOUTH);
+        actions.add(back);
+        actions.add(confirm);
+        root.add(details, BorderLayout.CENTER);
+        root.add(actions, BorderLayout.SOUTH);
         return root;
     }
 
@@ -153,16 +230,22 @@ public class SellWizardPanel extends JPanel {
         Async.run(this, () -> service.searchMembers(keyword), rows -> {
             loadingMembers = true;
             members.removeAllItems();
-            for (MemberChoice member : rows) members.addItem(member);
+            for (MemberChoice member : rows) {
+                members.addItem(member);
+            }
             loadingMembers = false;
             updateSelectedMember();
-            if (rows.isEmpty()) memberInfo.setText("Không tìm thấy hội viên phù hợp. Hãy xóa bớt từ khóa hoặc mở module Hội viên.");
+            if (rows.isEmpty()) {
+                memberInfo.setText("Không tìm thấy hội viên phù hợp. Hãy xóa bớt từ khóa hoặc mở module Hội viên.");
+            }
         });
     }
 
     private void populatePlans(List<MembershipPlan> items) {
         plans.removeAllItems();
-        for (MembershipPlan p : items) plans.addItem(p);
+        for (MembershipPlan p : items) {
+            plans.addItem(p);
+        }
     }
 
     private void updateSelectedMember() {
@@ -170,7 +253,10 @@ public class SellWizardPanel extends JPanel {
         currentPreview = null;
         photo.setIcon(null);
         if (selectedMember == null) {
-            photo.setText("Chưa chọn hội viên"); memberInfo.setText("Tìm theo tên hoặc số điện thoại."); nextMember.setEnabled(false); return;
+            photo.setText("Chưa chọn hội viên");
+            memberInfo.setText("Tìm theo tên hoặc số điện thoại.");
+            nextMember.setEnabled(false);
+            return;
         }
         String activeText = selectedMember.activePlanName() == null ? "Chưa có gói Active."
                 : "Gói đang Active: " + selectedMember.activePlanName() + " · đến " + DateTimeUtils.format(selectedMember.activeEndDate());
@@ -179,25 +265,47 @@ public class SellWizardPanel extends JPanel {
                 + "<br>" + photoText + "<br>" + activeText + "</html>");
         nextMember.setEnabled(selectedMember.hasPhoto());
         helpPhoto.setEnabled(!selectedMember.hasPhoto());
-        if (!selectedMember.hasPhoto()) { photo.setText("Chưa có ảnh"); return; }
+        if (!selectedMember.hasPhoto()) {
+            photo.setText("Chưa có ảnh");
+            return;
+        }
         photo.setText("Đang tải ảnh...");
         int id = selectedMember.visitorId();
         Async.run(this, () -> service.findMemberPhoto(id), imageBytes -> {
-            if (selectedMember == null || selectedMember.visitorId() != id) return;
-            if (imageBytes.isEmpty() || imageBytes.get() == null) { photo.setText("Ảnh không còn"); nextMember.setEnabled(false); return; }
+            if (selectedMember == null || selectedMember.visitorId() != id) {
+                return;
+            }
+            if (imageBytes.isEmpty() || imageBytes.get() == null) {
+                photo.setText("Ảnh không còn");
+                nextMember.setEnabled(false);
+                return;
+            }
             try {
                 var buffered = ImageIO.read(new ByteArrayInputStream(imageBytes.get()));
-                if (buffered == null) { photo.setText("Không đọc được ảnh"); return; }
+                if (buffered == null) {
+                    photo.setText("Không đọc được ảnh");
+                    return;
+                }
                 Image scaled = buffered.getScaledInstance(140, 175, Image.SCALE_SMOOTH);
-                photo.setIcon(new ImageIcon(scaled)); photo.setText("");
-            } catch (Exception ex) { photo.setText("Không đọc được ảnh"); }
+                photo.setIcon(new ImageIcon(scaled));
+                photo.setText("");
+            } catch (java.io.IOException ex) {
+                photo.setText("Không đọc được ảnh");
+                System.err.println("Lỗi đọc ảnh: " + ex.getMessage());
+            }
         });
     }
 
     private void goToPlanStep() {
         selectedMember = (MemberChoice) members.getSelectedItem();
-        if (selectedMember == null) { Dialogs.warn(this, "Hãy chọn một hội viên trước."); return; }
-        if (!selectedMember.hasPhoto()) { Dialogs.warn(this, "Hội viên chưa có ảnh. Bấm Thêm ảnh ngay để xem hướng dẫn."); return; }
+        if (selectedMember == null) {
+            Dialogs.warn(this, "Hãy chọn một hội viên trước.");
+            return;
+        }
+        if (!selectedMember.hasPhoto()) {
+            Dialogs.warn(this, "Hội viên chưa có ảnh. Bấm Thêm ảnh ngay để xem hướng dẫn.");
+            return;
+        }
         preview.setText("Chọn Bán mới hoặc Gia hạn, chọn gói rồi bấm Xem xác nhận.");
         showStep("plan");
     }
@@ -207,9 +315,13 @@ public class SellWizardPanel extends JPanel {
         MembershipPlan plan = (MembershipPlan) plans.getSelectedItem();
         Mode selectedMode = (Mode) mode.getSelectedItem();
         if (member == null || plan == null || selectedMode == null) {
-            Dialogs.warn(this, "Hãy chọn hội viên, thao tác và gói tập."); return;
+            Dialogs.warn(this, "Hãy chọn hội viên, thao tác và gói tập.");
+            return;
         }
-        if (!member.hasPhoto()) { Dialogs.warn(this, "Hội viên chưa có ảnh. Không thể mua hoặc gia hạn gói."); return; }
+        if (!member.hasPhoto()) {
+            Dialogs.warn(this, "Hội viên chưa có ảnh. Không thể mua hoặc gia hạn gói.");
+            return;
+        }
         if (!selectedMode.renewal && member.activePlanName() != null && member.activeEndDate() != null
                 && !member.activeEndDate().isBefore(LocalDate.now())) {
             Dialogs.warn(this, "Hội viên đang có gói '" + member.activePlanName() + "' đến "
@@ -242,14 +354,17 @@ public class SellWizardPanel extends JPanel {
         MembershipPlan plan = (MembershipPlan) plans.getSelectedItem();
         Mode selectedMode = (Mode) mode.getSelectedItem();
         if (member == null || plan == null || selectedMode == null || currentPreview == null) {
-            Dialogs.warn(this, "Hãy quay lại kiểm tra thông tin giao dịch."); return;
+            Dialogs.warn(this, "Hãy quay lại kiểm tra thông tin giao dịch.");
+            return;
         }
         if (!Dialogs.confirm(this, "Tạo gói " + selectedMode.label.toLowerCase() + " cho " + member.displayName()
-                + " với giá " + BillingFormat.money(plan.getPrice()) + "?\nGói mới và hóa đơn Pending được lưu trong cùng transaction.")) return;
+                + " với giá " + BillingFormat.money(plan.getPrice()) + "?\nGói mới và hóa đơn Pending được lưu trong cùng transaction.")) {
+            return;
+        }
         confirm.setEnabled(false);
         Async.run(this, () -> selectedMode.renewal
-                        ? service.renewPlan(member.visitorId(), plan.getPlanId())
-                        : service.sellPlan(member.visitorId(), plan.getPlanId()), result -> {
+                ? service.renewPlan(member.visitorId(), plan.getPlanId())
+                : service.sellPlan(member.visitorId(), plan.getPlanId()), result -> {
             confirm.setEnabled(true);
             Dialogs.info(this, (result.renewed() ? "Đã gia hạn gói thành công." : "Đã bán gói thành công.")
                     + "\nMã gói mới: " + result.membershipId()
@@ -258,16 +373,23 @@ public class SellWizardPanel extends JPanel {
                     + "\nNgày kết thúc: " + DateTimeUtils.format(result.endDate())
                     + "\nSố tiền: " + BillingFormat.money(result.planPrice())
                     + "\nHóa đơn đang Chờ thanh toán, hạn " + DateTimeUtils.format(LocalDate.now().plusDays(7)) + ".");
-            showStep("member"); loadMembers();
-        }, error -> { confirm.setEnabled(true); com.gym.core.ui.Dialogs.error(this, error); });
+            showStep("member");
+            loadMembers();
+        }, error -> {
+            confirm.setEnabled(true);
+            com.gym.core.ui.Dialogs.error(this, error);
+        });
     }
 
     private void showStep(String step) {
         cardLayout.show(cards, step);
         stepLabel.setText(switch (step) {
-            case "member" -> "BƯỚC 1/3 · Chọn hội viên";
-            case "plan" -> "BƯỚC 2/3 · Chọn thao tác và gói tập";
-            default -> "BƯỚC 3/3 · Xác nhận giao dịch";
+            case "member" ->
+                "BƯỚC 1/3 · Chọn hội viên";
+            case "plan" ->
+                "BƯỚC 2/3 · Chọn thao tác và gói tập";
+            default ->
+                "BƯỚC 3/3 · Xác nhận giao dịch";
         });
     }
 }
