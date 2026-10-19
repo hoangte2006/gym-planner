@@ -1,10 +1,8 @@
 package com.gym.core.dao;
 
-import com.gym.core.DBConnection;
 import com.gym.core.exception.DataAccessException;
 import com.gym.core.model.Member;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -145,8 +143,8 @@ public class MemberDao extends AbstractJdbcDao<Member, Integer> {
 
     /** Ảnh của hội viên; Optional rỗng nếu chưa có ảnh hoặc không có hội viên. */
     public Optional<byte[]> findPhoto(int visitorId) {
-        try (Connection cn = DBConnection.getConnection();
-             PreparedStatement ps = cn.prepareStatement("SELECT Photo FROM MEMBER WHERE Visitor_ID = ?")) {
+        try (Lease lease = Lease.open();
+             PreparedStatement ps = lease.connection().prepareStatement("SELECT Photo FROM MEMBER WHERE Visitor_ID = ?")) {
             ps.setInt(1, visitorId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? Optional.ofNullable(rs.getBytes(1)) : Optional.empty();

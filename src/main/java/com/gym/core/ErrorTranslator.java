@@ -125,6 +125,11 @@ public final class ErrorTranslator {
                     return "Không thể xóa vì dữ liệu này đang được sử dụng ở nơi khác.";
                 }
                 return "Dữ liệu tham chiếu không tồn tại hoặc không hợp lệ.";
+            case 229:
+            case 230:
+            case 262:
+                // Thiếu quyền trên bảng/cột/lệnh (script 10, 11 phân quyền RBAC)
+                return "Bạn không có quyền thực hiện thao tác này.";
             case 1205:
                 return "Hệ thống đang bận xử lý, vui lòng thử lại.";
             default:

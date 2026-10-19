@@ -57,6 +57,14 @@ class ErrorTranslatorTest {
     }
 
     @Test
+    void permissionErrorsAreTranslated() {
+        for (int code : new int[]{229, 230, 262}) {
+            String raw = "The SELECT permission was denied on the object 'STAFF'.";
+            assertEquals("Bạn không có quyền thực hiện thao tác này.", ErrorTranslator.toMessage(sql(raw, code)));
+        }
+    }
+
+    @Test
     void sqlExceptionInsideDataAccessExceptionIsFound() {
         DataAccessException wrapped = new DataAccessException("x", sql("e", 50012));
         assertEquals("Lớp đã đủ người, không thể đăng ký thêm.", ErrorTranslator.toMessage(wrapped));
