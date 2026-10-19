@@ -104,7 +104,7 @@ public class MainFrame extends JFrame {
         if (created.add(module.getId())) {
             content.add(module.createPanel(), module.getId());
         }
-        cards.show(content, module.getId());
+        cards.show(content, module.getId()); 
     }
 
     private JPanel buildStatusBar() {

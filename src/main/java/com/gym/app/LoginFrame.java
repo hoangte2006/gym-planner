@@ -82,6 +82,7 @@ public class LoginFrame extends JFrame {
         String phone = phoneField.getText();
         String password = new String(passwordField.getPassword());
         loginButton.setEnabled(false);
+        //là một việc nền, xong thì gọi onLoginSuccess() hoặc hiện lỗi
         Async.run(this, () -> authService.login(phone, password),
                 this::onLoginSuccess,
                 error -> {
