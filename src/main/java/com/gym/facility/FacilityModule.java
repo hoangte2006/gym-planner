@@ -1,13 +1,16 @@
+
 package com.gym.facility;
 
 import com.gym.app.AppModule;
 import com.gym.core.model.StaffRole;
-import com.gym.core.ui.PlaceholderPanel;
+import com.gym.facility.ui.FacilityDashboardPanel;
 
 import javax.swing.JPanel;
 import java.util.Set;
 
-/** Module Nhân sự & Cơ sở vật chất (TV4). Chủ module thay nội dung createPanel() bằng màn hình thật. */
+/**
+ * Module Nhân sự & Cơ sở vật chất (TV4).
+ */
 public class FacilityModule implements AppModule {
 
     @Override
@@ -27,6 +30,6 @@ public class FacilityModule implements AppModule {
 
     @Override
     public JPanel createPanel() {
-        return new PlaceholderPanel(getTitle(), "TV4");
+        return new FacilityDashboardPanel();
     }
 }
