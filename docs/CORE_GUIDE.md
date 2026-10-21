@@ -125,6 +125,44 @@ public class BillingQueryDao extends BillingLogDao {
 Mẹo: gõ thử câu SQL trong SSMS cho chạy đúng trước, rồi đưa vào Java và thay giá trị bằng `?`.
 Luôn dùng `?` (PreparedStatement), không nối chuỗi người dùng nhập vào SQL.
 
+### Ghi nhiều bảng bằng nhiều DAO trong MỘT giao dịch: `Tx`
+
+Mỗi DAO tự mở kết nối riêng và chốt ngay sau mỗi lệnh. Nên nếu gọi liên tiếp hai DAO mà DAO thứ hai lỗi,
+**DAO thứ nhất vẫn đã ghi** (dữ liệu mồ côi). Muốn "cùng thành công hoặc cùng hủy" thì bọc trong `Tx.run`:
+
+```java
+// Bán vé ngày = khách + vé + hóa đơn. Hóa đơn lỗi thì khách và vé cũng bị hủy.
+Tx.run(() -> {
+    passDao.insert(ticket);
+    bill.setVisitorId(ticket.getVisitorId());
+    billingDao.insert(bill);
+});
+
+// Cần giá trị trả về thì dùng Tx.call
+Membership saved = Tx.call(() -> {
+    Membership m = membershipDao.insert(newMembership);
+    billingDao.insert(billFor(m));
+    return m;
+});
+```
+
+Cách hoạt động: `Tx` mở **một** kết nối, tắt tự chốt, rồi mọi DAO gọi bên trong dùng kết nối đó. Xong thì chốt, lỗi thì hủy.
+Các DAO đã sẵn sàng, bạn không phải sửa gì ở DAO.
+
+Quy tắc:
+
+1. Gọi DAO **ngay trong lambda**, cùng luồng. Với `Async`, đặt `Tx` **bên trong** việc nền:
+   `Async.run(this, () -> Tx.call(() -> service.sell(...)), result -> ...)`.
+2. **Đừng `catch` lỗi trong lambda rồi chạy tiếp.** Lỗi phải bay ra khỏi `Tx.run` thì giao dịch mới được hủy.
+3. `Tx` lồng nhau tự gộp vào giao dịch ngoài cùng; chỉ giao dịch ngoài cùng mới chốt hoặc hủy. `MemberDao.insert`
+   (vốn tự ghi hai bảng) cũng gộp vào `Tx` bên ngoài.
+4. Trong `Tx` đọc lại được dữ liệu vừa ghi (chưa chốt) của chính mình.
+5. Đừng chờ người dùng bấm nút bên trong `Tx` (kết nối bị giữ suốt thời gian đó). Hộp thoại xác nhận hỏi **trước**, rồi mới gọi `Tx`.
+6. Các thao tác trong kế hoạch cần `Tx`: bán vé ngày (khách + vé + hóa đơn), bán/gia hạn gói (gói + hóa đơn),
+   tạo lớp có đặt thiết bị (buổi + lớp + đặt thiết bị), nâng vé ngày thành hội viên.
+
+Xem mẫu và các ca thử ở `src/test/java/com/gym/core/TxTest.java`.
+
 ## 4. Lỗi và thông báo tiếng Việt
 
 ```
