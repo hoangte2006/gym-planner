@@ -132,6 +132,40 @@ public class StaffDao extends AbstractJdbcDao<Staff, Integer> {
         return queryOne(selectSql() + " WHERE s.Phone = ?", ps -> ps.setString(1, phone));
     }
 
+    /**
+     * Tìm theo số điện thoại đã chuẩn hóa để UX-04 có thể phát hiện trùng kể cả khi
+     * dữ liệu cũ có dấu cách, dấu gạch, ngoặc hoặc dấu +.
+     * Tham số normalizedDigits chỉ chứa chữ số.
+     */
+    public Optional<Staff> findByNormalizedPhone(String normalizedDigits) {
+        String expression = normalizedPhoneExpression();
+        return queryOne(selectSql() + " WHERE " + expression + " = ?",
+                ps -> ps.setString(1, normalizedDigits));
+    }
+
+    /**
+     * UX-04: kiểm tra có nhân sự KHÁC sử dụng cùng số đã chuẩn hóa hay không.
+     * Khi sửa hồ sơ, loại chính mã nhân viên đang sửa ngay trong SQL để không bỏ sót
+     * trường hợp dữ liệu cũ có nhiều biến thể định dạng của cùng một số.
+     */
+    public Optional<Staff> findDuplicateByNormalizedPhone(String normalizedDigits, Integer excludedStaffId) {
+        String sql = selectSql() + " WHERE " + normalizedPhoneExpression() + " = ?";
+        if (excludedStaffId != null) {
+            sql += " AND s.Staff_ID <> ?";
+        }
+        final String query = sql;
+        return queryOne(query, ps -> {
+            ps.setString(1, normalizedDigits);
+            if (excludedStaffId != null) {
+                ps.setInt(2, excludedStaffId);
+            }
+        });
+    }
+
+    private static String normalizedPhoneExpression() {
+        return "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(s.Phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', ''), '.', '')";
+    }
+
     public List<Staff> findByRole(StaffRole role) {
         return queryList(selectSql() + " WHERE s.Role = ? ORDER BY s.Staff_ID", ps -> ps.setString(1, role.getDbValue()));
     }

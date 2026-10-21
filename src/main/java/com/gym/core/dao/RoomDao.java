@@ -1,9 +1,11 @@
 package com.gym.core.dao;
 
 import com.gym.core.model.Room;
+import com.gym.core.model.Staff;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -61,4 +63,28 @@ public class RoomDao extends AbstractJdbcDao<Room, Integer> {
     public Optional<Room> findByName(String roomName) {
         return queryOne("SELECT * FROM ROOM WHERE Room_Name = ?", ps -> ps.setString(1, roomName));
     }
+
+
+    /**
+     * Phân trang danh sách phòng.
+     */
+    public List<Room> findRoomsPaged(int page, int pageSize) {
+        if (page < 1 || pageSize < 1) {
+            throw new IllegalArgumentException(
+                    "Trang và kích thước trang phải lớn hơn 0."
+            );
+        }
+
+        int offset = (page - 1) * pageSize;
+
+        String sql = "SELECT * FROM ROOM "
+                + "ORDER BY Room_ID "
+                + "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+
+        return queryList(sql, ps -> {
+            ps.setInt(1, offset);
+            ps.setInt(2, pageSize);
+        });
+    }
+
 }

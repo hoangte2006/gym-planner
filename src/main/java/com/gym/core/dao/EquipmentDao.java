@@ -68,4 +68,5 @@ public class EquipmentDao extends AbstractJdbcDao<Equipment, Integer> {
     public List<Equipment> findByRoom(int roomId) {
         return queryList(selectSql() + " WHERE Room_ID = ? ORDER BY Equipment_ID", ps -> ps.setInt(1, roomId));
     }
+
 }
