@@ -81,6 +81,11 @@ public class FormPanel extends JPanel {
         return register(key, label, required, combo);
     }
 
+    /** Thêm thành phần tùy biến vào form nhưng vẫn dùng chung quy tắc nhãn/layout. */
+    public <C extends JComponent> C addComponent(String key, String label, boolean required, C component) {
+        return register(key, label, required, component);
+    }
+
     public DatePicker addDate(String key, String label, boolean required) {
         return register(key, label, required, DatePickers.date());
     }
