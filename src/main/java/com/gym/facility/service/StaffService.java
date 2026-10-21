@@ -3,10 +3,13 @@ package com.gym.facility.service;
 import com.gym.core.dao.StaffDao;
 import com.gym.core.exception.BusinessException;
 import com.gym.core.model.Staff;
+import com.gym.core.model.StaffRole;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public class StaffService {
 
@@ -46,6 +49,22 @@ public class StaffService {
         // StaffDao.insert() sẽ định tuyến đến DAO phù hợp
         // theo loại nhân sự và trả về đối tượng đã tạo.
         return staffDao.insert(staff);
+    }
+
+    public Optional<Staff> findStaffByPhone(String phone) {
+        if (phone == null || phone.isBlank()) {
+            throw new BusinessException(
+                    "Số điện  tìm kiếm không được để trống."
+            );
+        }
+        return staffDao.findByPhone(phone.trim());
+    }
+
+    public List<Staff> findStaffByRole(StaffRole role) {
+        if(role == null) {
+            throw new BusinessException("role không được null");
+        }
+        return staffDao.findByRole(role);
     }
 
     private void validateStaff(Staff staff) {

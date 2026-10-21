@@ -4,6 +4,7 @@ import com.gym.core.dao.RoomDao;
 import com.gym.core.exception.BusinessException;
 import com.gym.core.model.Room;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -70,6 +71,15 @@ public class RoomService {
 
         return roomDao.findByName(roomName.trim());
     }
+
+    public List<Room> findAllPaged(int page, int pageSize) {
+        if(!(page > 0 && pageSize > 0)) {
+            throw new BusinessException("Page hoặc PageSize không được bé hơn bằng 0");
+        }
+
+        return roomDao.findRoomsPaged(page, pageSize);
+    }
+
 
     private void validateRoom(Room room) {
         if (room == null) {

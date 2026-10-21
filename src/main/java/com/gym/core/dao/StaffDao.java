@@ -135,4 +135,71 @@ public class StaffDao extends AbstractJdbcDao<Staff, Integer> {
     public List<Staff> findByRole(StaffRole role) {
         return queryList(selectSql() + " WHERE s.Role = ? ORDER BY s.Staff_ID", ps -> ps.setString(1, role.getDbValue()));
     }
+
+    /**
+     * Tìm nhân viên theo mã ID.
+     */
+    public Optional<Staff> findStaffById(Integer id) {
+        if (id == null || id <= 0) {
+            return Optional.empty();
+        }
+
+        return queryOne(
+                selectSql() + " WHERE s.Staff_ID = ?",
+                ps -> ps.setInt(1, id)
+        );
+    }
+
+    /**
+     * Lấy toàn bộ danh sách nhân viên theo mã ID tăng dần.
+     */
+    public List<Staff> findAllStaff() {
+        return queryList(
+                selectSql() + " ORDER BY s.Staff_ID",
+                ps -> {
+                }
+        );
+    }
+
+    /**
+     * Tìm nhân viên theo tên hoặc số điện thoại.
+     */
+    public List<Staff> search(String keyword) {
+        String sql = selectSql()
+                + " WHERE s.Full_Name LIKE ? OR s.Phone LIKE ?"
+                + " ORDER BY s.Staff_ID";
+
+        String value = "%"
+                + (keyword == null ? "" : keyword.trim())
+                + "%";
+
+        return queryList(sql, ps -> {
+            ps.setString(1, value);
+            ps.setString(2, value);
+        });
+    }
+
+    /**
+     * Lấy danh sách nhân viên có phân trang.
+     */
+    public List<Staff> findAllPaged(int page, int pageSize) {
+        if (page < 1 || pageSize < 1) {
+            throw new IllegalArgumentException(
+                    "Trang và kích thước trang phải lớn hơn 0."
+            );
+        }
+
+        int offset = (page - 1) * pageSize;
+
+        String sql = selectSql()
+                + " ORDER BY s.Staff_ID"
+                + " OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+
+        return queryList(sql, ps -> {
+            ps.setInt(1, offset);
+            ps.setInt(2, pageSize);
+        });
+    }
+
+
 }
