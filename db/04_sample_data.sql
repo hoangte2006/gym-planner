@@ -261,8 +261,8 @@ GO
 
 -- Seats taken per class (every registration that is not 'Cancelled')
 SELECT c.Session_ID, c.Class_Name, c.Max_Capacity,
-       COUNT(r.Visitor_ID)                    AS Da_Dang_Ky,
-       c.Max_Capacity - COUNT(r.Visitor_ID)   AS Con_Trong
+       COUNT(r.Visitor_ID)                    AS Seats_Taken,
+       c.Max_Capacity - COUNT(r.Visitor_ID)   AS Seats_Left
 FROM dbo.CLASS c
 LEFT JOIN dbo.CLASS_REGISTRATION r
        ON r.Session_ID = c.Session_ID AND r.Attendance_Status <> 'Cancelled'

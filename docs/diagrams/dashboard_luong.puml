@@ -1,0 +1,25 @@
+@startuml
+' Sơ đồ TUẦN TỰ: một thẻ số liệu của Dashboard được nạp như thế nào.
+' Đọc từ trên xuống; mỗi mũi tên là một lời gọi hàm, mũi tên đứt nét là kết quả trả về.
+title Luồng nạp thẻ "Hội viên đang hoạt động"
+
+actor "Quản lý" as U
+participant "DashboardPanel\n(UI)" as P
+participant "Async\n(luồng nền)" as A
+participant "DashboardService\n(Service)" as S
+participant "DashboardDao\n(DAO)" as D
+database "SQL Server" as DB
+
+U -> P : mở Dashboard
+P -> A : run(service::activeMembers)
+note right of A : việc nặng chạy ở luồng nền,\nmàn hình hiện "Đang xử lý..."
+A -> S : activeMembers()
+S -> S : requireAccess(vai trò hiện tại)
+S -> D : countActiveMembers(hôm nay)
+D -> DB : SELECT COUNT(DISTINCT Visitor_ID)\nFROM MEMBERSHIP WHERE Status='Active' AND End_Date >= ?
+DB --> D : 1219
+D --> S : 1219
+S --> A : 1219
+A --> P : (về luồng giao diện) setValue("1219")
+P --> U : thẻ hiện số 1219
+@enduml

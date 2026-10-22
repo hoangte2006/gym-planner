@@ -91,12 +91,19 @@ class DaoIntegrationTest {
 
     @Test
     void pagingWorks() {
-        PageResult<Member> page = new MemberDao().findPage(1, 10);
-        assertEquals(10, page.items().size());
-        assertTrue(page.totalItems() >= 10);
-        assertTrue(page.totalPages() >= 1);
-        PageResult<Member> page2 = new MemberDao().findPage(2, 10);
-        assertFalse(page.items().get(0).getVisitorId().equals(page2.items().get(0).getVisitorId()));
+        // Không giả định số lượng dữ liệu: máy chỉ nạp dữ liệu mẫu (script 04) có 6 hội viên,
+        // máy có thêm script 06 thì có hơn 1.000. Dùng trang nhỏ (2 dòng) để chạy được ở cả hai.
+        MemberDao dao = new MemberDao();
+        PageResult<Member> page1 = dao.findPage(1, 2);
+        assumeTrue(page1.totalItems() >= 4, "Cần ít nhất 4 hội viên để thử phân trang.");
+
+        assertEquals(2, page1.items().size());
+        assertEquals((int) Math.ceil(page1.totalItems() / 2.0), page1.totalPages());
+
+        PageResult<Member> page2 = dao.findPage(2, 2);
+        assertEquals(2, page2.items().size());
+        assertFalse(page1.items().get(0).getVisitorId().equals(page2.items().get(0).getVisitorId()),
+                "Trang 2 phải khác trang 1");
     }
 
     @Test

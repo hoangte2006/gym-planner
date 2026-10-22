@@ -2,6 +2,7 @@ package com.gym.app;
 
 import com.gym.billing.BillingModule;
 import com.gym.core.model.StaffRole;
+import com.gym.dashboard.DashboardModule;
 import com.gym.facility.FacilityModule;
 import com.gym.member.MemberModule;
 import com.gym.scheduling.SchedulingModule;
@@ -16,6 +17,7 @@ import java.util.List;
 public final class ModuleRegistry {
 
     private static final List<AppModule> MODULES = List.of(
+            new DashboardModule(),
             new MemberModule(),
             new BillingModule(),
             new SchedulingModule(),

@@ -1,0 +1,96 @@
+@startuml
+' Sơ đồ LỚP của module Dashboard: các lớp, chúng gọi nhau thế nào, thuộc tầng nào.
+' Quy ước mũi tên:  A --> B  : A dùng/gọi B     A ..|> B : A cài đặt giao diện B     A *-- B : A chứa B
+' Dòng bên dưới chọn bộ vẽ có sẵn trong PlantUML nên KHÔNG cần cài Graphviz.
+!pragma layout smetana
+title Sơ đồ lớp module Dashboard
+hide empty members
+skinparam classAttributeIconSize 0
+
+package "com.gym.app (khung ứng dụng)" {
+  interface AppModule {
+    + getId() : String
+    + getTitle() : String
+    + getAllowedRoles() : Set<StaffRole>
+    + createPanel() : JPanel
+  }
+  class Session {
+    + {static} getRole() : StaffRole
+  }
+}
+
+package "com.gym.dashboard" {
+  class DashboardModule {
+    + createPanel() : JPanel
+  }
+
+  package "ui (giao diện)" {
+    class DashboardPanel {
+      + refresh()
+    }
+    class StatCard {
+      + setValue(text : String)
+      + clear()
+    }
+    class EquipmentStatusChartPanel {
+      + setData(data : List<EquipmentStatusCount>)
+    }
+  }
+
+  package "service (luật nghiệp vụ)" {
+    class DashboardService {
+      + {static} EXPIRING_DAYS : int = 7
+      + activeMembers() : int
+      + monthlyRevenue() : BigDecimal
+      + expiringMemberships() : int
+      + classToday() : int
+      + equipmentByStatus() : List<EquipmentStatusCount>
+      + {static} requireAccess(role : StaffRole)
+    }
+  }
+
+  package "dao (truy vấn)" {
+    class DashboardDao {
+      + countActiveMembers(today : LocalDate) : int
+      + sumMonthlyRevenue(today : LocalDate) : BigDecimal
+      + countExpiringMemberships(today : LocalDate, days : int) : int
+      + countClassToday(today : LocalDate) : int
+      + countEquipmentByStatus() : List<EquipmentStatusCount>
+    }
+  }
+
+  package "model" {
+    class EquipmentStatusCount <<record>> {
+      status : EquipmentStatus
+      count : int
+    }
+  }
+}
+
+package "com.gym.core" {
+  class DBConnection {
+    + {static} getConnection() : Connection
+  }
+  class Async <<UiKit>> {
+    + {static} run(owner, work, onSuccess)
+  }
+  enum EquipmentStatus {
+    ACTIVE
+    UNDER_MAINTENANCE
+    BROKEN
+  }
+}
+
+DashboardModule ..|> AppModule
+DashboardModule --> DashboardPanel : tạo màn hình
+DashboardPanel *-- "4" StatCard : 4 thẻ số liệu
+DashboardPanel *-- EquipmentStatusChartPanel : biểu đồ
+DashboardPanel --> DashboardService : chỉ gọi Service
+DashboardPanel ..> Async : chạy việc nền
+DashboardService --> DashboardDao
+DashboardService ..> Session : đọc vai trò
+DashboardDao ..> DBConnection : mở kết nối
+DashboardDao ..> EquipmentStatusCount : tạo
+EquipmentStatusChartPanel ..> EquipmentStatusCount : vẽ từ
+EquipmentStatusCount --> EquipmentStatus
+@enduml

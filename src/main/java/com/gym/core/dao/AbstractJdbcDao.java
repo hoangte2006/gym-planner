@@ -1,6 +1,7 @@
 package com.gym.core.dao;
 
 import com.gym.core.DBConnection;
+import com.gym.core.Tx;
 import com.gym.core.exception.DataAccessException;
 
 import java.sql.Connection;
@@ -17,6 +18,9 @@ import java.util.Optional;
  * thành DataAccessException ở MỘT chỗ duy nhất. DAO con chỉ cần khai báo tên bảng, khóa chính,
  * cách đổi một dòng thành model, và câu INSERT/UPDATE của riêng bảng đó.
  *
+ * Mọi hàm ở đây đều "biết" giao dịch {@link Tx}: nếu đang chạy bên trong Tx.run thì dùng kết nối của
+ * giao dịch (không tự mở, không tự đóng, không tự chốt); nếu không thì tự mở kết nối riêng như trước.
+ *
  * @param <T>  kiểu model
  * @param <ID> kiểu khóa chính
  */
@@ -26,6 +30,36 @@ public abstract class AbstractJdbcDao<T, ID> implements BaseDao<T, ID> {
     @FunctionalInterface
     protected interface SqlWork<R> {
         R run(Connection cn) throws SQLException;
+    }
+
+    /**
+     * Kết nối "mượn" cho một lệnh: dùng kết nối của Tx nếu có (và không đóng nó), nếu không thì mở kết nối
+     * mới (và đóng khi xong). Dùng với try-with-resources.
+     */
+    protected static final class Lease implements AutoCloseable {
+        private final Connection connection;
+        private final boolean owned;
+
+        private Lease(Connection connection, boolean owned) {
+            this.connection = connection;
+            this.owned = owned;
+        }
+
+        static Lease open() {
+            Connection ambient = Tx.current(); // nếu đang trong Tx thì dùng kết nối của Tx, không đóng; nếu không thì mở kết nối mới và đóng khi xong
+            return ambient != null ? new Lease(ambient, false) : new Lease(DBConnection.getConnection(), true);
+        }
+
+        public Connection connection() {
+            return connection;
+        }
+
+        @Override
+        public void close() throws SQLException {
+            if (owned) {
+                connection.close();
+            }
+        }
     }
 
     // ---------- 3 thứ DAO con PHẢI khai báo ----------
@@ -95,8 +129,8 @@ public abstract class AbstractJdbcDao<T, ID> implements BaseDao<T, ID> {
 
     /** Chạy SELECT, trả về nhiều dòng. */
     protected List<T> queryList(String sql, StatementBinder binder) {
-        try (Connection cn = DBConnection.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+        try (Lease lease = Lease.open();
+             PreparedStatement ps = lease.connection().prepareStatement(sql)) {
             binder.bind(ps);
             try (ResultSet rs = ps.executeQuery()) {
                 List<T> result = new ArrayList<>();
@@ -118,8 +152,8 @@ public abstract class AbstractJdbcDao<T, ID> implements BaseDao<T, ID> {
 
     /** Chạy câu cho đúng một số (thường là COUNT). */
     protected long count(String sql, StatementBinder binder) {
-        try (Connection cn = DBConnection.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+        try (Lease lease = Lease.open();
+             PreparedStatement ps = lease.connection().prepareStatement(sql)) {
             binder.bind(ps);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getLong(1) : 0;
@@ -131,8 +165,8 @@ public abstract class AbstractJdbcDao<T, ID> implements BaseDao<T, ID> {
 
     /** Chạy INSERT/UPDATE/DELETE, trả về số dòng bị ảnh hưởng. */
     protected int execute(String sql, StatementBinder binder) {
-        try (Connection cn = DBConnection.getConnection()) {
-            return exec(cn, sql, binder);
+        try (Lease lease = Lease.open()) {
+            return exec(lease.connection(), sql, binder);
         } catch (SQLException e) {
             throw new DataAccessException("Không ghi được dữ liệu vào bảng " + tableName(), e);
         }
@@ -140,8 +174,8 @@ public abstract class AbstractJdbcDao<T, ID> implements BaseDao<T, ID> {
 
     /** Chạy INSERT cho bảng có khóa IDENTITY, trả về khóa mà DB vừa tự sinh. */
     protected int insertAndGetKey(String sql, StatementBinder binder) {
-        try (Connection cn = DBConnection.getConnection()) {
-            return insertKey(cn, sql, binder);
+        try (Lease lease = Lease.open()) {
+            return insertKey(lease.connection(), sql, binder);
         } catch (SQLException e) {
             throw new DataAccessException("Không thêm được dữ liệu vào bảng " + tableName(), e);
         }
@@ -152,8 +186,17 @@ public abstract class AbstractJdbcDao<T, ID> implements BaseDao<T, ID> {
     /**
      * Chạy nhiều lệnh trên CÙNG một kết nối. Có lỗi ở bất kỳ lệnh nào thì hủy tất cả (rollback).
      * Dùng cho bảng kế thừa: ghi vào bảng cha rồi bảng con.
+     * Nếu đang bên trong {@link Tx} thì chỉ chạy trên kết nối của Tx; việc chốt hay hủy do Tx quyết định.
      */
     protected <R> R inTransaction(SqlWork<R> work) {
+        Connection ambient = Tx.current();
+        if (ambient != null) {
+            try {
+                return work.run(ambient);
+            } catch (SQLException e) {
+                throw new DataAccessException("Không ghi được dữ liệu vào bảng " + tableName(), e);
+            }
+        }
         try (Connection cn = DBConnection.getConnection()) {
             cn.setAutoCommit(false);
             try {
