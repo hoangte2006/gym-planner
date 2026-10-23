@@ -11,6 +11,7 @@ import org.jfree.data.general.DefaultPieDataset;
 import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.util.List;
 
 /**
@@ -29,6 +30,7 @@ public class EquipmentStatusChartPanel extends JPanel {
 
     public EquipmentStatusChartPanel() {
         super(new BorderLayout());
+        chartPanel.setPreferredSize(new Dimension(380, 280));
         chartPanel.setPopupMenu(null);          // bỏ menu chuột phải (Properties, Save as...) cho gọn
         add(chartPanel, BorderLayout.CENTER);
         setData(List.of());

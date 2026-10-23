@@ -32,6 +32,15 @@ package "com.gym.dashboard" {
       + setValue(text : String)
       + clear()
     }
+    class MonthlyRevenueChartPanel {
+      + setData(data : List<MonthlyRevenue>)
+    }
+    class MaintenanceCostChartPanel {
+      + setData(data : List<MonthlyMaintenanceCost>)
+    }
+    class ClassOccupancyChartPanel {
+      + setData(data : List<ClassOccupancy>)
+    }
     class EquipmentStatusChartPanel {
       + setData(data : List<EquipmentStatusCount>)
     }
@@ -39,13 +48,17 @@ package "com.gym.dashboard" {
 
   package "service (luật nghiệp vụ)" {
     class DashboardService {
-      + {static} EXPIRING_DAYS : int = 7
+      + {static} EXPIRING_DAY_OPTIONS : List<Integer> = [7, 30]
       + activeMembers() : int
       + monthlyRevenue() : BigDecimal
-      + expiringMemberships() : int
+      + expiringMemberships(days : int) : int
       + classToday() : int
+      + monthlyRevenueChart() : List<MonthlyRevenue>
+      + monthlyMaintenanceCostChart() : List<MonthlyMaintenanceCost>
+      + classOccupancyThisWeek() : List<ClassOccupancy>
       + equipmentByStatus() : List<EquipmentStatusCount>
       + {static} requireAccess(role : StaffRole)
+      + {static} requireFinanceAccess(role : StaffRole)
     }
   }
 
@@ -55,11 +68,28 @@ package "com.gym.dashboard" {
       + sumMonthlyRevenue(today : LocalDate) : BigDecimal
       + countExpiringMemberships(today : LocalDate, days : int) : int
       + countClassToday(today : LocalDate) : int
+      + sumRevenueByMonth(today, months) : List<MonthlyRevenue>
+      + sumMaintenanceCostByMonth(today, months) : List<MonthlyMaintenanceCost>
+      + classOccupancyByDay(weekStart) : List<ClassOccupancy>
       + countEquipmentByStatus() : List<EquipmentStatusCount>
     }
   }
 
   package "model" {
+    class MonthlyRevenue <<record>> {
+      month : YearMonth
+      revenue : BigDecimal
+    }
+    class MonthlyMaintenanceCost <<record>> {
+      month : YearMonth
+      cost : BigDecimal
+    }
+    class ClassOccupancy <<record>> {
+      date : LocalDate
+      seatsTaken : int
+      capacity : int
+      + percent() : double
+    }
     class EquipmentStatusCount <<record>> {
       status : EquipmentStatus
       count : int
@@ -84,13 +114,22 @@ package "com.gym.core" {
 DashboardModule ..|> AppModule
 DashboardModule --> DashboardPanel : tạo màn hình
 DashboardPanel *-- "4" StatCard : 4 thẻ số liệu
-DashboardPanel *-- EquipmentStatusChartPanel : biểu đồ
+DashboardPanel *-- MonthlyRevenueChartPanel : biểu đồ 1 (chỉ Quản lý)
+DashboardPanel *-- MaintenanceCostChartPanel : biểu đồ 4 (chỉ Quản lý)
+DashboardPanel *-- ClassOccupancyChartPanel : biểu đồ 3
+DashboardPanel *-- EquipmentStatusChartPanel : biểu đồ 2
 DashboardPanel --> DashboardService : chỉ gọi Service
 DashboardPanel ..> Async : chạy việc nền
 DashboardService --> DashboardDao
 DashboardService ..> Session : đọc vai trò
 DashboardDao ..> DBConnection : mở kết nối
+DashboardDao ..> MonthlyRevenue : tạo
+DashboardDao ..> MonthlyMaintenanceCost : tạo
+DashboardDao ..> ClassOccupancy : tạo
 DashboardDao ..> EquipmentStatusCount : tạo
+MonthlyRevenueChartPanel ..> MonthlyRevenue : vẽ từ
+MaintenanceCostChartPanel ..> MonthlyMaintenanceCost : vẽ từ
+ClassOccupancyChartPanel ..> ClassOccupancy : vẽ từ
 EquipmentStatusChartPanel ..> EquipmentStatusCount : vẽ từ
 EquipmentStatusCount --> EquipmentStatus
 @enduml
