@@ -16,6 +16,7 @@ public class StatCard extends JPanel {
     private static final String EMPTY_VALUE = "—";
 
     private final JLabel valueLabel = new JLabel(EMPTY_VALUE);
+    private final JLabel noteLabel = new JLabel();
 
     public StatCard(String title, String note, Color accent) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -29,7 +30,7 @@ public class StatCard extends JPanel {
         valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, 32f));
         valueLabel.setForeground(accent);
 
-        JLabel noteLabel = new JLabel(note);
+        noteLabel.setText(note);
         noteLabel.setForeground(Theme.MUTED);
         noteLabel.setFont(noteLabel.getFont().deriveFont(12f));
 
@@ -41,6 +42,11 @@ public class StatCard extends JPanel {
     /** Hiện con số (gọi trên luồng giao diện, ví dụ trong phần onSuccess của Async). */
     public void setValue(String text) {
         valueLabel.setText(text);
+    }
+
+    /** Đổi dòng chú thích nhỏ dưới con số (ví dụ khi đổi khoảng thời gian). */
+    public void setNote(String text) {
+        noteLabel.setText(text);
     }
 
     /** Về trạng thái chưa có số liệu. */
