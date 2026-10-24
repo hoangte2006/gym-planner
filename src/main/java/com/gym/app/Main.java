@@ -1,11 +1,11 @@
 package com.gym.app;
 
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+
 import com.gym.core.DBConnection;
 import com.gym.core.exception.DataAccessException;
 import com.gym.core.ui.Theme;
-
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 
 /** Điểm khởi động: giao diện FlatLaf, kiểm tra kết nối DB, rồi mở màn hình đăng nhập. */
 public final class Main {
