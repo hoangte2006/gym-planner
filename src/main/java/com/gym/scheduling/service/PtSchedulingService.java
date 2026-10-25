@@ -47,14 +47,17 @@ public class PtSchedulingService {
     }
 
     public List<Member> searchMembers(String keyword) {
+        SchedulingAuthorization.requireManagementAccess();
         return memberDao.search(keyword, 1, 20).items();
     }
 
     public List<Room> findRooms() {
+        SchedulingAuthorization.requireSchedulingAccess();
         return roomDao.findAll();
     }
 
     public List<Trainer> findTrainers() {
+        SchedulingAuthorization.requireSchedulingAccess();
         return trainerDao.findAll();
     }
 
@@ -74,6 +77,7 @@ public class PtSchedulingService {
             LocalDateTime start,
             LocalDateTime end) {
 
+        SchedulingAuthorization.requireManagementAccess();
         if (memberId == null || roomId == null || trainerId == null) {
             throw new IllegalArgumentException("Vui lòng chọn hội viên, phòng và HLV.");
         }

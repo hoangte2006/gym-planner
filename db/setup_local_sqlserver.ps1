@@ -59,11 +59,11 @@ IF NOT EXISTS (SELECT 1 FROM [$Database].sys.database_principals WHERE name = N'
     EXEC(N'USE [$Database]; CREATE USER [$LoginName] FOR LOGIN [$LoginName];');
 EXEC(N'USE [$Database]; ALTER ROLE db_owner ADD MEMBER [$LoginName];');
 "@
-sqlcmd -S ".\$Instance" -E -b -Q $tsql
+sqlcmd -S ".\$Instance" -E -C -b -Q $tsql
 if ($LASTEXITCODE -ne 0) { throw "Tao login that bai." }
 
 Write-Host ""
 Write-Host "Kiem tra dang nhap bang TCP ..."
-sqlcmd -S "tcp:localhost,1433" -U $LoginName -P $Password -d $Database -b -Q "SELECT COUNT(*) AS so_bang FROM sys.tables"
+sqlcmd -S "tcp:localhost,1433" -U $LoginName -P $Password -d $Database -C -b -Q "SELECT COUNT(*) AS so_bang FROM sys.tables"
 if ($LASTEXITCODE -ne 0) { throw "Khong ket noi duoc qua TCP." }
 Write-Host "XONG. Sao chep config.example.properties thanh config.local.properties va dien db.password."

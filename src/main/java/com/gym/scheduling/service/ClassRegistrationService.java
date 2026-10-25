@@ -46,10 +46,12 @@ public class ClassRegistrationService {
     }
 
     public List<Member> searchMembers(String keyword) {
+        SchedulingAuthorization.requireManagementAccess();
         return memberDao.search(keyword, 1, 20).items();
     }
 
     public List<ClassAvailability> findUpcomingClasses() {
+        SchedulingAuthorization.requireSchedulingAccess();
         LocalDateTime now = LocalDateTime.now();
         return classDao.findAll().stream()
                 .filter(session -> session.getStartTime() != null
@@ -67,6 +69,7 @@ public class ClassRegistrationService {
     }
 
     public List<RegistrationEntry> findRegistrations(int sessionId) {
+        SchedulingAuthorization.requireSchedulingAccess();
         return registrationDao.findBySession(sessionId).stream()
                 .map(registration -> {
                     Member member = memberDao.findById(registration.getVisitorId())
@@ -81,6 +84,7 @@ public class ClassRegistrationService {
     }
 
     public ClassRegistration register(int sessionId, int visitorId) {
+        SchedulingAuthorization.requireManagementAccess();
         ClassSession classSession = classDao.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Lớp tập không tồn tại."));
         if (classSession.getStartTime() == null
@@ -131,6 +135,7 @@ public class ClassRegistrationService {
     }
 
     public void cancelRegistration(int sessionId, int visitorId) {
+        SchedulingAuthorization.requireManagementAccess();
         ClassRegistration registration = registrationDao.findById(
                         new ClassRegistrationKey(sessionId, visitorId))
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đăng ký lớp."));
@@ -145,6 +150,7 @@ public class ClassRegistrationService {
     }
 
     public void markAttendance(int sessionId, int visitorId, AttendanceStatus status) {
+        SchedulingAuthorization.requireSchedulingAccess();
         if (status != AttendanceStatus.ATTENDED
                 && status != AttendanceStatus.CONFIRMED) {
             throw new IllegalArgumentException("Trạng thái điểm danh không hợp lệ.");

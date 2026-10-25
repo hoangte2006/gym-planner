@@ -57,6 +57,16 @@ public class ClassSchedulingService {
                 roomId, trainerId, date, duration);
     }
 
+    public List<Room> findRooms() {
+        SchedulingAuthorization.requireSchedulingAccess();
+        return roomDao.findAll();
+    }
+
+    public List<Trainer> findTrainers() {
+        SchedulingAuthorization.requireSchedulingAccess();
+        return trainerDao.findAll();
+    }
+
     /**
      * Kiểm tra dữ liệu, phòng, huấn luyện viên và xung đột lịch,
      * sau đó tạo lớp.
@@ -72,6 +82,7 @@ public class ClassSchedulingService {
             LocalDateTime startTime,
             LocalDateTime endTime) {
 
+        SchedulingAuthorization.requireManagementAccess();
         validateInput(
             className, maxCapacity, roomId, trainerId,
             startTime, endTime

@@ -1,7 +1,5 @@
 package com.gym.scheduling.ui;
 
-import com.gym.core.dao.RoomDao;
-import com.gym.core.dao.TrainerDao;
 import com.gym.core.model.ClassSession;
 import com.gym.core.model.Room;
 import com.gym.core.model.Trainer;
@@ -23,8 +21,6 @@ public class ClassWizardPanel extends JPanel {
     private static final long serialVersionUID = 1L;
 
     private final ClassSchedulingService schedulingService;
-    private final RoomDao roomDao;
-    private final TrainerDao trainerDao;
     private final Runnable onClassCreated;
 
     private final JTextField nameField = new JTextField(22);
@@ -47,27 +43,16 @@ public class ClassWizardPanel extends JPanel {
     private final JButton useSlotButton = new JButton("Dùng giờ đã chọn");
 
     public ClassWizardPanel() {
-        this(new ClassSchedulingService(), new RoomDao(), new TrainerDao(), null);
+        this(new ClassSchedulingService(), null);
     }
 
     public ClassWizardPanel(
             ClassSchedulingService schedulingService,
-            RoomDao roomDao,
-            TrainerDao trainerDao) {
-        this(schedulingService, roomDao, trainerDao, null);
-    }
-
-    public ClassWizardPanel(
-            ClassSchedulingService schedulingService,
-            RoomDao roomDao,
-            TrainerDao trainerDao,
             Runnable onClassCreated) {
 
         super(new BorderLayout(10, 10));
 
         this.schedulingService = schedulingService;
-        this.roomDao = roomDao;
-        this.trainerDao = trainerDao;
         this.onClassCreated = onClassCreated != null ? onClassCreated : () -> {};
 
         setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24));
@@ -266,8 +251,8 @@ public class ClassWizardPanel extends JPanel {
             @Override
             protected ResourceData doInBackground() {
                 return new ResourceData(
-                        roomDao.findAll(),
-                        trainerDao.findAll()
+                        schedulingService.findRooms(),
+                        schedulingService.findTrainers()
                 );
             }
 

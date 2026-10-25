@@ -2,6 +2,7 @@ package com.gym.core.dao;
 
 import com.gym.core.model.ClassSession;
 import com.gym.core.model.SessionType;
+import com.gym.scheduling.dao.SessionDao;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

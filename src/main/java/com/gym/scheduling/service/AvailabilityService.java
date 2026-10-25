@@ -30,6 +30,7 @@ public class AvailabilityService {
             LocalDate date,
             Duration duration) {
 
+        SchedulingAuthorization.requireSchedulingAccess();
         if (roomId == null || trainerId == null || date == null
                 || duration == null || duration.isZero() || duration.isNegative()) {
             throw new IllegalArgumentException("Vui lòng chọn phòng, huấn luyện viên, ngày và thời lượng hợp lệ.");

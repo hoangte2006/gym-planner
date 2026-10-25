@@ -1,5 +1,9 @@
-package com.gym.core.dao;
+package com.gym.scheduling.dao;
 
+import com.gym.core.dao.AbstractJdbcDao;
+import com.gym.core.dao.ClassSessionDao;
+import com.gym.core.dao.PtSessionDao;
+import com.gym.core.dao.Sql;
 import com.gym.core.model.ClassSession;
 import com.gym.core.model.PtSession;
 import com.gym.core.model.Session;
@@ -52,7 +56,7 @@ public class SessionDao extends AbstractJdbcDao<Session, Integer> {
     }
 
     /** Điền các cột chung của bảng SESSION vào một đối tượng Session. */
-    static void fillBase(Session s, ResultSet rs) throws SQLException {
+    public static void fillBase(Session s, ResultSet rs) throws SQLException {
         s.setSessionId(rs.getInt("Session_ID"));
         s.setSessionType(SessionType.fromDb(rs.getString("Session_Type")));
         s.setRoomId(rs.getInt("Room_ID"));
@@ -62,7 +66,7 @@ public class SessionDao extends AbstractJdbcDao<Session, Integer> {
     }
 
     /** INSERT vào bảng SESSION trên kết nối có sẵn, trả về Session_ID mới. Dùng trong transaction của DAO con. */
-    static int insertSessionRow(Connection cn, Session s, SessionType type) throws SQLException {
+    public static int insertSessionRow(Connection cn, Session s, SessionType type) throws SQLException {
         return insertKey(cn, "INSERT INTO [SESSION] (Session_Type, Room_ID, Trainer_ID, Start_Time, End_Time) "
                 + "VALUES (?, ?, ?, ?, ?)", ps -> {
             ps.setString(1, type.getDbValue());
@@ -74,7 +78,7 @@ public class SessionDao extends AbstractJdbcDao<Session, Integer> {
     }
 
     /** UPDATE bảng SESSION (không đổi Session_Type). Dùng trong transaction của DAO con. */
-    static void updateSessionRow(Connection cn, Session s) throws SQLException {
+    public static void updateSessionRow(Connection cn, Session s) throws SQLException {
         exec(cn, "UPDATE [SESSION] SET Room_ID = ?, Trainer_ID = ?, Start_Time = ?, End_Time = ? "
                 + "WHERE Session_ID = ?", ps -> {
             ps.setInt(1, s.getRoomId());

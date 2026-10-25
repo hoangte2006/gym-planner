@@ -1,10 +1,10 @@
 package com.gym.scheduling.service;
 
 import com.gym.core.DateTimeUtils;
-import com.gym.core.dao.SessionDao;
 import com.gym.core.model.BookingStatus;
 import com.gym.core.model.PtSession;
 import com.gym.core.model.Session;
+import com.gym.scheduling.dao.SessionDao;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;

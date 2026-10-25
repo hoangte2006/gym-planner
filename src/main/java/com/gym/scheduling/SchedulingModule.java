@@ -1,8 +1,6 @@
 package com.gym.scheduling;
 
 import com.gym.app.AppModule;
-import com.gym.core.dao.RoomDao;
-import com.gym.core.dao.TrainerDao;
 import com.gym.core.model.StaffRole;
 import com.gym.scheduling.service.ClassSchedulingService;
 import com.gym.scheduling.ui.ClassWizardPanel;
@@ -45,8 +43,6 @@ public class SchedulingModule implements AppModule {
         WeeklySchedulePanel weeklySchedulePanel = new WeeklySchedulePanel();
         ClassWizardPanel classWizardPanel = new ClassWizardPanel(
                 new ClassSchedulingService(),
-                new RoomDao(),
-                new TrainerDao(),
                 weeklySchedulePanel::refreshSchedule
         );
 
