@@ -1,13 +1,14 @@
 package com.gym.member;
 
-import com.gym.app.AppModule;
-import com.gym.core.model.StaffRole;
-import com.gym.core.ui.PlaceholderPanel;
-
-import javax.swing.JPanel;
 import java.util.Set;
 
-/** Module Hội viên (TV2). Chủ module thay nội dung createPanel() bằng màn hình thật. */
+import javax.swing.JPanel;
+
+import com.gym.app.AppModule;
+import com.gym.core.model.StaffRole;
+import com.gym.member.ui.MemberListPanel;
+
+/** Module Hội viên (TV2). */
 public class MemberModule implements AppModule {
 
     @Override
@@ -27,6 +28,6 @@ public class MemberModule implements AppModule {
 
     @Override
     public JPanel createPanel() {
-        return new PlaceholderPanel(getTitle(), "TV2");
+        return new MemberListPanel();
     }
 }
