@@ -2,7 +2,7 @@ package com.gym.app;
 
 import com.gym.core.Config;
 import com.gym.core.ui.Dialogs;
-import com.gym.core.ui.PlaceholderPanel;
+import com.gym.app.home.HomePanel;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -43,7 +43,7 @@ public class MainFrame extends JFrame {
         add(content, BorderLayout.CENTER);
         add(buildStatusBar(), BorderLayout.SOUTH);
 
-        content.add(new PlaceholderPanel("Việc cần làm hôm nay", "TV1"), HOME_ID);
+        content.add(new HomePanel(), HOME_ID);
         created.add(HOME_ID);
         cards.show(content, HOME_ID);
     }

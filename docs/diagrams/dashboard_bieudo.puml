@@ -1,0 +1,80 @@
+@startuml
+' Sơ đồ TUẦN TỰ: cả 4 biểu đồ của Dashboard được nạp và vẽ như thế nào.
+' Mỗi biểu đồ cùng một khuôn: UI -> Async -> Service -> DAO -> SQL -> model (record) -> UI vẽ.
+' Chỗ khác nhau giữa các biểu đồ: câu SQL, kiểu model, và Service có bổ sung dữ liệu thiếu hay không.
+title Luồng nạp 4 biểu đồ của Dashboard
+
+participant "DashboardPanel\n(UI)" as P
+participant "Async\n(luồng nền)" as A
+participant "DashboardService\n(Service)" as S
+participant "DashboardDao\n(DAO)" as D
+database "SQL Server" as DB
+participant "…ChartPanel\n(vẽ biểu đồ)" as C
+
+== Khi mở Dashboard hoặc bấm "Làm mới": refresh() chạy MỖI biểu đồ trong một việc nền riêng ==
+
+group Biểu đồ 1: Doanh thu theo tháng (chỉ Quản lý)
+  P -> A : run(service::monthlyRevenueChart)
+  A -> S : monthlyRevenueChart()
+  S -> S : requireFinanceAccess(vai trò)\n(Lễ tân bị chặn ở đây)
+  S -> D : sumRevenueByMonth(hôm nay, 12)
+  D -> DB : SELECT YEAR, MONTH, SUM(Amount_Paid)\nFROM BILLING_LOG WHERE Paid ... GROUP BY YEAR, MONTH
+  DB --> D : các dòng (chỉ tháng CÓ hóa đơn)
+  D --> S : List<MonthlyRevenue>\n(mỗi dòng: YearMonth + BigDecimal)
+  S -> S : fillMissingMonths(...)\nbổ sung tháng thiếu = 0 cho đủ 12 tháng
+  S --> A : 12 phần tử, từ cũ đến mới
+  A --> C : (về luồng giao diện) setData(...)
+  C --> P : vẽ 12 cột xanh dương
+end
+
+group Biểu đồ 4: Chi phí bảo trì theo tháng (chỉ Quản lý)
+  P -> A : run(service::monthlyMaintenanceCostChart)
+  A -> S : monthlyMaintenanceCostChart()
+  S -> S : requireFinanceAccess(vai trò)
+  S -> D : sumMaintenanceCostByMonth(hôm nay, 12)
+  D -> DB : SELECT YEAR, MONTH, SUM(Cost)\nFROM MAINTENANCE_LOG GROUP BY YEAR, MONTH
+  DB --> D : các dòng (chỉ tháng CÓ phiếu bảo trì)
+  D --> S : List<MonthlyMaintenanceCost>\n(mỗi dòng: YearMonth + BigDecimal)
+  S -> S : fillMissingMaintenanceMonths(...)\nbổ sung tháng thiếu = 0
+  S --> A : 12 phần tử, từ cũ đến mới
+  A --> C : setData(...)
+  C --> P : vẽ 12 cột cam
+end
+
+group Biểu đồ 3: Tỷ lệ lấp đầy lớp học trong tuần (Quản lý và Lễ tân)
+  P -> A : run(service::classOccupancyThisWeek)
+  A -> S : classOccupancyThisWeek()
+  S -> S : requireAccess(vai trò)\nmondayOf(hôm nay) -> thứ Hai đầu tuần
+  S -> D : classOccupancyByDay(thứ Hai)
+  D -> DB : SELECT ngày, SUM(Max_Capacity), SUM(số đăng ký chưa hủy)\nFROM CLASS JOIN SESSION LEFT JOIN CLASS_REGISTRATION\nGROUP BY ngày
+  DB --> D : các dòng (chỉ ngày CÓ lớp)
+  D --> S : List<ClassOccupancy>\n(mỗi dòng: ngày + chỗ đã đăng ký + sức chứa)
+  S -> S : fillMissingDays(...)\nbổ sung ngày không có lớp = 0/0, đủ 7 ngày
+  S --> A : 7 phần tử, T2 đến CN
+  A --> C : setData(...)
+  C -> C : percent() = chỗ đã đăng ký / sức chứa x 100
+  C --> P : vẽ 7 cột tím (0 đến 100%)
+end
+
+group Biểu đồ 2: Thiết bị theo trạng thái (Quản lý và Lễ tân)
+  P -> A : run(service::equipmentByStatus)
+  A -> S : equipmentByStatus()
+  S -> S : requireAccess(vai trò)
+  S -> D : countEquipmentByStatus()
+  D -> DB : SELECT Operational_Status, COUNT(*)\nFROM EQUIPMENT GROUP BY Operational_Status
+  DB --> D : mỗi trạng thái một dòng
+  D --> S : List<EquipmentStatusCount>\n(mỗi dòng: EquipmentStatus + số lượng)
+  note right of S : Không cần bổ sung:\ntrạng thái không có thiết bị\nthì không có miền nào trên biểu đồ tròn
+  S --> A : danh sách như DAO trả về
+  A --> C : setData(...)
+  C --> P : vẽ biểu đồ tròn (màu lấy từ enum)
+end
+
+note over P, C
+  Quy ước chung của cả 4 biểu đồ:
+  - UI chỉ gọi Service, không bao giờ gọi DAO.
+  - Mỗi dòng kết quả SQL biến thành MỘT record (model) ở DAO; record chỉ để chở số liệu, không sửa, không lưu xuống DB.
+  - Quyền được kiểm tra ở Service (UI ẩn biểu đồ chỉ là lớp ngoài).
+  - Tiền luôn là BigDecimal, không dùng double.
+end note
+@enduml

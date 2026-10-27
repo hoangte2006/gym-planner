@@ -16,6 +16,7 @@ import org.jfree.data.category.DefaultCategoryDataset;
 import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -34,6 +35,7 @@ public class MonthlyRevenueChartPanel extends JPanel {
 
     public MonthlyRevenueChartPanel() {
         super(new BorderLayout());
+        chartPanel.setPreferredSize(new Dimension(380, 280));
         chartPanel.setPopupMenu(null);          // bỏ menu chuột phải cho gọn
         add(chartPanel, BorderLayout.CENTER);
         setData(List.of());

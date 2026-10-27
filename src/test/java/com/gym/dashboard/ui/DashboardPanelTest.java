@@ -72,6 +72,9 @@ class DashboardPanelTest {
         assertEquals(4, count(panel, StatCard.class), "Quản lý thấy 4 thẻ");
         assertEquals(1, count(panel, MonthlyRevenueChartPanel.class), "Quản lý thấy biểu đồ doanh thu");
         assertEquals(1, count(panel, EquipmentStatusChartPanel.class), "Quản lý thấy biểu đồ thiết bị");
+        assertEquals(1, count(panel, ClassOccupancyChartPanel.class), "Quản lý thấy biểu đồ lấp đầy lớp");
+        assertEquals(1, count(panel, MaintenanceCostChartPanel.class), "Quản lý thấy biểu đồ chi phí bảo trì");
+        assertEquals(2, count(panel, RankingPanel.class), "Quản lý thấy 2 bảng xếp hạng (top huấn luyện viên, lớp đông nhất)");
     }
 
     @Test
@@ -80,6 +83,9 @@ class DashboardPanelTest {
         assertEquals(3, count(panel, StatCard.class), "Lễ tân thấy 3 thẻ (không có doanh thu)");
         assertEquals(0, count(panel, MonthlyRevenueChartPanel.class), "Lễ tân không thấy biểu đồ doanh thu");
         assertEquals(1, count(panel, EquipmentStatusChartPanel.class), "Lễ tân vẫn thấy biểu đồ thiết bị");
+        assertEquals(1, count(panel, ClassOccupancyChartPanel.class), "Lễ tân vẫn thấy biểu đồ lấp đầy lớp");
+        assertEquals(0, count(panel, MaintenanceCostChartPanel.class), "Lễ tân không thấy biểu đồ chi phí bảo trì");
+        assertEquals(0, count(panel, RankingPanel.class), "Lễ tân không thấy bảng xếp hạng");
     }
 
     @Test
