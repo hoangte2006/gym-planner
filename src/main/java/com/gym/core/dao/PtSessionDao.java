@@ -42,7 +42,7 @@ public class PtSessionDao extends AbstractJdbcDao<PtSession, Integer> {
     }
 
     /** Dùng chung với SessionDao (cùng tên cột). Cột con có thể NULL khi đọc qua LEFT JOIN. */
-    static PtSession map(ResultSet rs) throws SQLException {
+    public static PtSession map(ResultSet rs) throws SQLException {
         PtSession p = new PtSession();
         SessionDao.fillBase(p, rs);
         p.setMemberId(Sql.integer(rs, "Member_ID"));

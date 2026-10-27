@@ -65,6 +65,14 @@ public class ClassWizardPanel extends JPanel {
         header.add(new JLabel(
                 "Nhập thông tin lớp. Hệ thống sẽ kiểm tra sức chứa và lịch trùng."
         ), BorderLayout.SOUTH);
+        JButton helpButton = new JButton("?");
+        helpButton.setToolTipText("Hướng dẫn tạo lớp tập nhóm.");
+        helpButton.addActionListener(event -> JOptionPane.showMessageDialog(this,
+                "Chọn phòng, huấn luyện viên, ngày và giờ.\n"
+                        + "Dùng Tìm giờ trống để xem gợi ý trước khi tạo lớp.\n"
+                        + "Sức chứa lớp không được vượt sức chứa phòng.",
+                "Hướng dẫn tạo lớp", JOptionPane.INFORMATION_MESSAGE));
+        header.add(helpButton, BorderLayout.EAST);
         add(header, BorderLayout.NORTH);
 
         JPanel form = new JPanel(new GridBagLayout());

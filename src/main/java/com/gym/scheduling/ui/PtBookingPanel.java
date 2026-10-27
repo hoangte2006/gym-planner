@@ -73,6 +73,14 @@ public class PtBookingPanel extends JPanel {
         add(form, BorderLayout.NORTH);
 
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton helpButton = new JButton("?");
+        helpButton.setToolTipText("Hướng dẫn đặt lịch PT.");
+        helpButton.addActionListener(event -> JOptionPane.showMessageDialog(this,
+                "Tìm hội viên, sau đó chọn huấn luyện viên, phòng và giờ tập.\n"
+                        + "Dùng Tìm giờ trống để tránh lịch trùng.\n"
+                        + "Hội viên cần có ảnh hồ sơ để đặt PT.",
+                "Hướng dẫn đặt lịch PT", JOptionPane.INFORMATION_MESSAGE));
+        footer.add(helpButton);
         footer.add(bookButton);
         add(footer, BorderLayout.SOUTH);
 

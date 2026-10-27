@@ -30,6 +30,8 @@ public class ClassRegistrationPanel extends JPanel {
     private final JButton cancelButton = new JButton("Hủy đăng ký");
     private final JButton attendButton = new JButton("Đánh dấu đã tham gia");
     private final JButton confirmButton = new JButton("Đặt lại chờ điểm danh");
+    private final JButton helpButton = new JButton("?");
+    private final JLabel statusLabel = new JLabel(" ");
     private final DefaultTableModel tableModel = new DefaultTableModel(
             new Object[]{"Mã hội viên", "Họ tên", "Điện thoại", "Ngày đăng ký", "Trạng thái"}, 0) {
         private static final long serialVersionUID = 1L;
@@ -55,7 +57,10 @@ public class ClassRegistrationPanel extends JPanel {
         JPanel classPicker = new JPanel(new BorderLayout(8, 0));
         classPicker.add(new JLabel("Lớp sắp diễn ra:"), BorderLayout.WEST);
         classPicker.add(classCombo, BorderLayout.CENTER);
-        classPicker.add(refreshButton, BorderLayout.EAST);
+        JPanel classActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        classActions.add(refreshButton);
+        classActions.add(helpButton);
+        classPicker.add(classActions, BorderLayout.EAST);
         add(classPicker, BorderLayout.NORTH);
 
         JPanel memberControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
@@ -70,6 +75,7 @@ public class ClassRegistrationPanel extends JPanel {
         JPanel center = new JPanel(new BorderLayout(0, 8));
         center.add(memberControls, BorderLayout.NORTH);
         center.add(new JScrollPane(registrationTable), BorderLayout.CENTER);
+        center.add(statusLabel, BorderLayout.SOUTH);
         add(center, BorderLayout.CENTER);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -105,6 +111,12 @@ public class ClassRegistrationPanel extends JPanel {
         });
 
         refreshButton.addActionListener(e -> refreshClasses());
+        helpButton.setToolTipText("Hướng dẫn đăng ký, hủy đăng ký và điểm danh lớp.");
+        helpButton.addActionListener(e -> JOptionPane.showMessageDialog(this,
+                "Chọn lớp để xem danh sách đăng ký và số chỗ còn lại.\n"
+                        + "Tìm hội viên rồi bấm Đăng ký.\n"
+                        + "Chọn một dòng để hủy đăng ký hoặc cập nhật điểm danh.",
+                "Hướng dẫn đăng ký lớp", JOptionPane.INFORMATION_MESSAGE));
         searchButton.addActionListener(e -> searchMembers());
         registerButton.addActionListener(e -> register());
         cancelButton.addActionListener(e -> cancelRegistration());
@@ -138,6 +150,9 @@ public class ClassRegistrationPanel extends JPanel {
                     if (classes.isEmpty()) {
                         tableModel.setRowCount(0);
                         entries = List.of();
+                        statusLabel.setText("Chưa có lớp sắp diễn ra. Hãy tạo lớp trước.");
+                    } else {
+                        statusLabel.setText("Chọn một lớp để xem đăng ký.");
                     }
                 } catch (Exception ex) {
                     Dialogs.error(ClassRegistrationPanel.this, ex);
@@ -158,6 +173,7 @@ public class ClassRegistrationPanel extends JPanel {
         if (selected == null) {
             tableModel.setRowCount(0);
             entries = List.of();
+            statusLabel.setText("Chọn lớp để xem đăng ký.");
             return;
         }
 
@@ -197,6 +213,9 @@ public class ClassRegistrationPanel extends JPanel {
                             : registration.getAttendanceStatus().getLabel()
             });
         }
+        statusLabel.setText(result.isEmpty()
+                ? "Lớp chưa có hội viên đăng ký."
+                : result.size() + " lượt đăng ký.");
     }
 
     private void searchMembers() {
@@ -251,6 +270,13 @@ public class ClassRegistrationPanel extends JPanel {
         RegistrationEntry entry = selectedEntry();
         ClassAvailability selected = (ClassAvailability) classCombo.getSelectedItem();
         if (entry == null || selected == null) {
+            return;
+        }
+        if (JOptionPane.showOptionDialog(this,
+                "Hủy đăng ký của " + entry.memberName() + "? Chỗ trống sẽ được mở lại.",
+                "Xác nhận hủy đăng ký", JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE, null,
+                new Object[]{"Hủy đăng ký", "Giữ lại"}, "Giữ lại") != 0) {
             return;
         }
         runOperation("Hủy đăng ký", () -> service.cancelRegistration(

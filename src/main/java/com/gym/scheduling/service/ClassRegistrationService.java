@@ -11,6 +11,7 @@ import com.gym.core.model.ClassSession;
 import com.gym.core.model.Member;
 import com.gym.core.model.Membership;
 import com.gym.core.model.MembershipStatus;
+import com.gym.scheduling.dao.SessionDao;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,13 +25,15 @@ public class ClassRegistrationService {
     private final ClassRegistrationDao registrationDao;
     private final MemberDao memberDao;
     private final MembershipDao membershipDao;
+    private final SessionDao sessionDao;
 
     public ClassRegistrationService() {
         this(
                 new ClassSessionDao(),
                 new ClassRegistrationDao(),
                 new MemberDao(),
-                new MembershipDao()
+                new MembershipDao(),
+                new SessionDao()
         );
     }
 
@@ -39,10 +42,20 @@ public class ClassRegistrationService {
             ClassRegistrationDao registrationDao,
             MemberDao memberDao,
             MembershipDao membershipDao) {
+        this(classDao, registrationDao, memberDao, membershipDao, new SessionDao());
+    }
+
+    public ClassRegistrationService(
+            ClassSessionDao classDao,
+            ClassRegistrationDao registrationDao,
+            MemberDao memberDao,
+            MembershipDao membershipDao,
+            SessionDao sessionDao) {
         this.classDao = Objects.requireNonNull(classDao);
         this.registrationDao = Objects.requireNonNull(registrationDao);
         this.memberDao = Objects.requireNonNull(memberDao);
         this.membershipDao = Objects.requireNonNull(membershipDao);
+        this.sessionDao = Objects.requireNonNull(sessionDao);
     }
 
     public List<Member> searchMembers(String keyword) {
@@ -107,31 +120,10 @@ public class ClassRegistrationService {
                     "Hội viên không có gói tập đang hiệu lực hôm nay.");
         }
 
-        ClassRegistrationKey key = new ClassRegistrationKey(sessionId, visitorId);
-        ClassRegistration existing = registrationDao.findById(key).orElse(null);
-        if (existing != null && existing.getAttendanceStatus() != AttendanceStatus.CANCELLED) {
-            throw new IllegalArgumentException("Hội viên đã đăng ký lớp này.");
-        }
-
-        int registered = activeRegistrationCount(
-                registrationDao.findBySession(sessionId));
-        if (registered >= classSession.getMaxCapacity()) {
-            throw new IllegalStateException("Lớp đã đủ sĩ số.");
-        }
-
-        if (existing != null) {
-            existing.setRegistrationDate(LocalDateTime.now());
-            existing.setAttendanceStatus(AttendanceStatus.CONFIRMED);
-            registrationDao.update(existing);
-            return existing;
-        }
-
-        ClassRegistration registration = new ClassRegistration();
-        registration.setSessionId(sessionId);
-        registration.setVisitorId(visitorId);
-        registration.setRegistrationDate(LocalDateTime.now());
-        registration.setAttendanceStatus(AttendanceStatus.CONFIRMED);
-        return registrationDao.insert(registration);
+        sessionDao.registerClassSeat(sessionId, visitorId);
+        return registrationDao.findById(new ClassRegistrationKey(sessionId, visitorId))
+                .orElseThrow(() -> new IllegalStateException(
+                        "Không tìm thấy đăng ký sau khi hoàn tất giao dịch."));
     }
 
     public void cancelRegistration(int sessionId, int visitorId) {
