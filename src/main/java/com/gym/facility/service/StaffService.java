@@ -1,5 +1,6 @@
 package com.gym.facility.service;
 
+import com.gym.app.Session;
 import com.gym.core.dao.PageResult;
 import com.gym.core.dao.StaffDao;
 import com.gym.core.exception.BusinessException;
@@ -26,16 +27,23 @@ public class StaffService {
 
     /** Thêm một STAFF và bảng con tương ứng; transaction nhiều bảng được DAO xử lý. */
     public Staff createStaff(Staff staff) {
+
+        requireStaffAccess(Session.getRole());
+
         validateStaff(staff);
         if (staff.getStaffId() != null) {
             throw new BusinessException("Nhân sự mới không được tự gán mã nhân viên.");
         }
+
         normalizeAndCheckPhone(staff, null);
         return staffDao.insert(staff);
     }
 
     /** Cập nhật nhân sự. Không cho đổi loại lớp vì việc đó cần chuyển bảng con có kiểm soát. */
     public Staff updateStaff(Staff staff) {
+
+        requireStaffAccess(Session.getRole());
+
         validateStaff(staff);
         if (staff.getStaffId() == null || staff.getStaffId() <= 0) {
             throw new BusinessException("Mã nhân viên không hợp lệ.");
@@ -51,6 +59,9 @@ public class StaffService {
     }
 
     public void deleteStaff(Integer staffId) {
+
+        requireStaffAccess(Session.getRole());
+
         requirePositiveId(staffId, "Mã nhân viên");
         if (staffDao.findById(staffId).isEmpty()) {
             throw new BusinessException("Nhân sự không tồn tại hoặc đã bị xóa.");
@@ -60,20 +71,45 @@ public class StaffService {
     }
 
     public Staff findStaffById(Integer staffId) {
+
+        requireStaffAccess(Session.getRole());
+
         requirePositiveId(staffId, "Mã nhân viên");
         return staffDao.findById(staffId)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy nhân sự."));
     }
 
     public List<Staff> findAll() {
+
+        requireStaffAccess(Session.getRole());
+
         return staffDao.findAll();
     }
 
+    /**
+     * Tìm nhân sự theo từ khóa.
+     */
+    public List<Staff> searchStaff(String keyword) {
+        requireStaffAccess(Session.getRole());
+
+        if (keyword == null || keyword.isBlank()) {
+            return staffDao.findAll();
+        }
+
+        return staffDao.search(keyword.trim());
+    }
+
     public PageResult<Staff> findPage(int page, int pageSize) {
+
+        requireStaffAccess(Session.getRole());
+
         return staffDao.findPage(page, pageSize);
     }
 
     public List<Staff> findStaffByRole(StaffRole role) {
+
+        requireStaffAccess(Session.getRole());
+
         if (role == null) {
             throw new BusinessException("Vai trò nhân sự không được để trống.");
         }
@@ -81,6 +117,9 @@ public class StaffService {
     }
 
     private void normalizeAndCheckPhone(Staff staff, Integer currentStaffId) {
+
+        requireStaffAccess(Session.getRole());
+
         String raw = staff.getPhone();
         if (raw == null || raw.isBlank()) {
             throw new BusinessException("Số điện thoại không được để trống.");
@@ -103,6 +142,7 @@ public class StaffService {
     }
 
     private void validateStaff(Staff staff) {
+
         if (staff == null) {
             throw new BusinessException("Thông tin nhân sự không được để trống.");
         }
@@ -153,6 +193,12 @@ public class StaffService {
     private static void requirePositiveId(Integer id, String label) {
         if (id == null || id <= 0) {
             throw new BusinessException(label + " không hợp lệ.");
+        }
+    }
+
+    public static void requireStaffAccess(StaffRole role) {
+        if (role != StaffRole.MANAGER) {
+            throw new BusinessException("Chỉ Quản lý mới được xem được Staff.");
         }
     }
 }

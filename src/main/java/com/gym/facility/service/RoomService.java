@@ -1,9 +1,11 @@
 package com.gym.facility.service;
 
+import com.gym.app.Session;
 import com.gym.core.dao.PageResult;
 import com.gym.core.dao.RoomDao;
 import com.gym.core.exception.BusinessException;
 import com.gym.core.model.Room;
+import com.gym.core.model.StaffRole;
 
 import java.util.List;
 import java.util.Objects;
@@ -19,6 +21,8 @@ public class RoomService {
     }
 
     public Room createRoom(Room room) {
+        requireRoomAccess(Session.getRole());
+
         validateRoom(room);
         if (room.getRoomId() != null) {
             throw new BusinessException("Phòng mới không được tự gán mã phòng.");
@@ -31,6 +35,9 @@ public class RoomService {
     }
 
     public Room updateRoom(Room room) {
+
+        requireRoomAccess(Session.getRole());
+
         validateRoom(room);
         requirePositiveId(room.getRoomId());
         if (roomDao.findById(room.getRoomId()).isEmpty()) {
@@ -46,12 +53,16 @@ public class RoomService {
     }
 
     public Room findById(Integer roomId) {
+        requireRoomAccess(Session.getRole());
+
         requirePositiveId(roomId);
         return roomDao.findById(roomId)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy phòng."));
     }
 
     public Optional<Room> findRoomByName(String roomName) {
+        requireRoomAccess(Session.getRole());
+
         if (roomName == null || roomName.isBlank()) {
             throw new BusinessException("Tên phòng tìm kiếm không được để trống.");
         }
@@ -59,14 +70,33 @@ public class RoomService {
     }
 
     public List<Room> findAll() {
+        requireRoomAccess(Session.getRole());
+
         return roomDao.findAll();
     }
 
     public PageResult<Room> findPage(int page, int pageSize) {
+        requireRoomAccess(Session.getRole());
+
         return roomDao.findPage(page, pageSize);
     }
 
+    /**
+     * Tìm phòng theo từ khóa.
+     */
+    public List<Room> searchRooms(String keyword) {
+        requireRoomAccess(Session.getRole());
+
+        if (keyword == null || keyword.isBlank()) {
+            return roomDao.findAll();
+        }
+
+        return roomDao.search(keyword.trim());
+    }
+
     public void deleteRoom(Integer roomId) {
+        requireRoomAccess(Session.getRole());
+
         requirePositiveId(roomId);
         if (roomDao.findById(roomId).isEmpty()) {
             throw new BusinessException("Phòng không tồn tại hoặc đã bị xóa.");
@@ -96,6 +126,12 @@ public class RoomService {
     private static void requirePositiveId(Integer roomId) {
         if (roomId == null || roomId <= 0) {
             throw new BusinessException("Mã phòng không hợp lệ.");
+        }
+    }
+
+    public static void requireRoomAccess(StaffRole role) {
+        if (role != StaffRole.MANAGER) {
+            throw new BusinessException("Chỉ Quản lý mới được xem được Staff.");
         }
     }
 }

@@ -95,4 +95,31 @@ public class MaintenanceLogDao extends AbstractJdbcDao<MaintenanceLog, Maintenan
         return queryList(selectSql() + " WHERE Equipment_ID = ? ORDER BY Log_no DESC",
                 ps -> ps.setInt(1, equipmentId));
     }
+
+    /**
+     * Tìm trong lịch sử bảo trì của một thiết bị.
+     */
+    public List<MaintenanceLog> searchByEquipment(int equipmentId, String keyword) {
+        String sql = selectSql()
+                + " WHERE Equipment_ID = ?"
+                + " AND (CAST(Log_no AS VARCHAR(20)) LIKE ?"
+                + " OR CONVERT(VARCHAR(10), Maintenance_Date, 23) LIKE ?"
+                + " OR CAST(Cost AS VARCHAR(30)) LIKE ?"
+                + " OR LOWER(COALESCE(Description, '')) LIKE ?"
+                + " OR CAST(Logged_By AS VARCHAR(20)) LIKE ?)"
+                + " ORDER BY Log_no DESC";
+
+        String value = keyword == null ? "" : keyword.trim().toLowerCase(java.util.Locale.ROOT);
+        String pattern = "%" + value + "%";
+
+        return queryList(sql, ps -> {
+            ps.setInt(1, equipmentId);
+            ps.setString(2, pattern);
+            ps.setString(3, pattern);
+            ps.setString(4, pattern);
+            ps.setString(5, pattern);
+            ps.setString(6, pattern);
+        });
+    }
+
 }

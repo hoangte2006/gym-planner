@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -125,6 +126,27 @@ public class StaffDao extends AbstractJdbcDao<Staff, Integer> {
     @Override
     public void deleteById(Integer id) {
         execute("DELETE FROM STAFF WHERE Staff_ID = ?", ps -> ps.setInt(1, id));
+    }
+
+    /**
+     * Tìm nhân sự theo mã, họ tên, số điện thoại hoặc vai trò.
+     */
+    public List<Staff> search(String keyword) {
+        String sql = selectSql()
+                + " WHERE CAST(s.Staff_ID AS VARCHAR(20)) LIKE ?"
+                + " OR LOWER(s.Full_Name) LIKE ?"
+                + " OR s.Phone LIKE ?"
+                + " OR LOWER(s.Role) LIKE ?"
+                + " ORDER BY s.Staff_ID";
+
+        String pattern = "%" + (keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT)) + "%";
+
+        return queryList(sql, ps -> {
+            ps.setString(1, pattern);
+            ps.setString(2, pattern);
+            ps.setString(3, pattern);
+            ps.setString(4, pattern);
+        });
     }
 
     /** Dùng khi đăng nhập: nhân viên được nhận diện bằng số điện thoại. */

@@ -64,6 +64,28 @@ public class RoomDao extends AbstractJdbcDao<Room, Integer> {
         return queryOne("SELECT * FROM ROOM WHERE Room_Name = ?", ps -> ps.setString(1, roomName));
     }
 
+    /**
+     * Tìm phòng theo mã, tên, sức chứa hoặc tầng/vị trí.
+     */
+    public List<Room> search(String keyword) {
+        String sql = "SELECT * FROM ROOM "
+                + "WHERE CAST(Room_ID AS VARCHAR(20)) LIKE ? "
+                + "OR LOWER(Room_Name) LIKE ? "
+                + "OR CAST(Capacity AS VARCHAR(20)) LIKE ? "
+                + "OR LOWER(COALESCE(Floor_Location, '')) LIKE ? "
+                + "ORDER BY Room_ID";
+
+        String value = keyword == null ? "" : keyword.trim().toLowerCase(java.util.Locale.ROOT);
+        String pattern = "%" + value + "%";
+
+        return queryList(sql, ps -> {
+            ps.setString(1, pattern);
+            ps.setString(2, pattern);
+            ps.setString(3, pattern);
+            ps.setString(4, pattern);
+        });
+    }
+
 
     /**
      * Phân trang danh sách phòng.

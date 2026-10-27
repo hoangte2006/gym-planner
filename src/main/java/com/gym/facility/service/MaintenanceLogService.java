@@ -1,5 +1,6 @@
 package com.gym.facility.service;
 
+import com.gym.app.Session;
 import com.gym.core.dao.EquipmentDao;
 import com.gym.core.dao.MaintenanceLogDao;
 import com.gym.core.dao.StaffDao;
@@ -30,6 +31,7 @@ public class MaintenanceLogService {
     }
 
     public MaintenanceLog create(MaintenanceLog log) {
+        requireMaintananceAccess(Session.getRole());
         validate(log);
         if (log.getLogNo() != null) {
             throw new BusinessException("Log_no được hệ thống tự sinh, không nhập thủ công.");
@@ -55,6 +57,8 @@ public class MaintenanceLogService {
     }
 
     public List<MaintenanceLog> findByEquipment(Integer equipmentId) {
+        requireMaintananceAccess(Session.getRole());
+
         if (equipmentId == null || equipmentId <= 0) {
             throw new BusinessException("Mã thiết bị không hợp lệ.");
         }
@@ -65,11 +69,36 @@ public class MaintenanceLogService {
     }
 
     public MaintenanceLog findById(Integer equipmentId, Integer logNo) {
+        requireMaintananceAccess(Session.getRole());
+
         if (equipmentId == null || equipmentId <= 0 || logNo == null || logNo <= 0) {
             throw new BusinessException("Khóa phiếu bảo trì không hợp lệ.");
         }
         return maintenanceLogDao.findById(new com.gym.core.model.MaintenanceLogKey(equipmentId, logNo))
                 .orElseThrow(() -> new BusinessException("Không tìm thấy phiếu bảo trì."));
+    }
+
+    /**
+     * Tìm lịch sử bảo trì của thiết bị đang chọn.
+     */
+    public List<MaintenanceLog> searchByEquipment(
+            Integer equipmentId, String keyword) {
+
+        requireMaintananceAccess(Session.getRole());
+
+        if (equipmentId == null || equipmentId <= 0) {
+            throw new BusinessException("Mã thiết bị không hợp lệ.");
+        }
+
+        if (equipmentDao.findById(equipmentId).isEmpty()) {
+            throw new BusinessException("Thiết bị không tồn tại.");
+        }
+
+        if (keyword == null || keyword.isBlank()) {
+            return maintenanceLogDao.findByEquipment(equipmentId);
+        }
+
+        return maintenanceLogDao.searchByEquipment(equipmentId, keyword.trim());
     }
 
     private void validate(MaintenanceLog log) {
@@ -90,6 +119,12 @@ public class MaintenanceLogService {
         }
         if (log.getCost() != null && log.getCost().signum() < 0) {
             throw new BusinessException("Chi phí bảo trì không được âm.");
+        }
+    }
+
+    public static void requireMaintananceAccess(StaffRole role) {
+        if (role != StaffRole.MANAGER) {
+            throw new BusinessException("Chỉ Quản lý mới được xem được Staff.");
         }
     }
 }

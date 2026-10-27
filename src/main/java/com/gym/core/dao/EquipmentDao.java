@@ -60,6 +60,28 @@ public class EquipmentDao extends AbstractJdbcDao<Equipment, Integer> {
                 });
     }
 
+    /**
+     * Tìm thiết bị theo mã, tên, mã phòng hoặc trạng thái.
+     */
+    public List<Equipment> search(String keyword) {
+        String sql = selectSql()
+                + " WHERE CAST(Equipment_ID AS VARCHAR(20)) LIKE ?"
+                + " OR LOWER(Equipment_Name) LIKE ?"
+                + " OR CAST(Room_ID AS VARCHAR(20)) LIKE ?"
+                + " OR LOWER(Operational_Status) LIKE ?"
+                + " ORDER BY Equipment_ID";
+
+        String value = keyword == null ? "" : keyword.trim().toLowerCase(java.util.Locale.ROOT);
+        String pattern = "%" + value + "%";
+
+        return queryList(sql, ps -> {
+            ps.setString(1, pattern);
+            ps.setString(2, pattern);
+            ps.setString(3, pattern);
+            ps.setString(4, pattern);
+        });
+    }
+
     public List<Equipment> findByStatus(EquipmentStatus status) {
         return queryList(selectSql() + " WHERE Operational_Status = ? ORDER BY Equipment_ID",
                 ps -> ps.setString(1, status.getDbValue()));
