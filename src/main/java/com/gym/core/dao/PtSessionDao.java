@@ -3,8 +3,6 @@ package com.gym.core.dao;
 import com.gym.core.model.BookingStatus;
 import com.gym.core.model.PtSession;
 import com.gym.core.model.SessionType;
-import com.gym.scheduling.dao.SessionDao;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;

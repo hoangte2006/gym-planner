@@ -146,7 +146,7 @@ public class PtBookingPanel extends JPanel {
     }
 
     private void populateTimes() {
-        for (int minute = 6 * 60; minute <= 22 * 60; minute += 30) {
+        for (int minute = 6 * 60; minute <= 22 * 60; minute += 15) {
             String time = String.format("%02d:%02d", minute / 60, minute % 60);
             startCombo.addItem(time);
             endCombo.addItem(time);

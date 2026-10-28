@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** Finds available 30-minute start times for a room and trainer. */
+/** Finds available 15-minute start times for a room and trainer. */
 public class AvailabilityService {
 
     private final SessionService sessionService;
@@ -32,9 +32,10 @@ public class AvailabilityService {
 
         SchedulingAuthorization.requireSchedulingAccess();
         if (roomId == null || trainerId == null || date == null
-                || duration == null || duration.isZero() || duration.isNegative()) {
+                || duration == null) {
             throw new IllegalArgumentException("Vui lòng chọn phòng, huấn luyện viên, ngày và thời lượng hợp lệ.");
         }
+        SessionTimeRules.validateDuration(duration);
 
         LocalDateTime dayStart = date.atTime(6, 0);
         LocalDateTime dayEnd = date.atTime(22, 0);
@@ -66,9 +67,9 @@ public class AvailabilityService {
 
         if (date.equals(LocalDate.now())) {
             LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
-            int nextHalfHour = (now.getMinute() / 30 + 1) * 30;
+            int nextSlot = (now.getMinute() / 15 + 1) * 15;
             LocalDateTime firstFutureSlot = now.withMinute(0)
-                    .plusMinutes(nextHalfHour);
+                    .plusMinutes(nextSlot);
             if (firstFutureSlot.isAfter(dayEnd)) {
                 return List.of();
             }
@@ -80,9 +81,17 @@ public class AvailabilityService {
         List<LocalDateTime> available = new ArrayList<>();
         for (FreeSlotFinder.Interval free :
                 FreeSlotFinder.findFreeSlots(dayStart, dayEnd, busy)) {
-            for (LocalDateTime start = free.start();
+            LocalDateTime firstStart = free.start().withSecond(0).withNano(0);
+            if (free.start().getSecond() > 0 || free.start().getNano() > 0) {
+                firstStart = firstStart.plusMinutes(1);
+            }
+            int minuteRemainder = firstStart.getMinute() % 15;
+            if (minuteRemainder != 0) {
+                firstStart = firstStart.plusMinutes(15 - minuteRemainder);
+            }
+            for (LocalDateTime start = firstStart;
                     !start.plus(duration).isAfter(free.end());
-                    start = start.plusMinutes(30)) {
+                    start = start.plusMinutes(15)) {
                 available.add(start);
             }
         }

@@ -1,13 +1,12 @@
 package com.gym.scheduling.service;
 
 import com.gym.core.dao.SessionEquipmentUsageDao;
+import com.gym.core.dao.SessionDao;
 import com.gym.core.model.BookingStatus;
 import com.gym.core.model.Equipment;
 import com.gym.core.model.PtSession;
 import com.gym.core.model.Session;
 import com.gym.core.model.SessionEquipmentUsage;
-import com.gym.scheduling.dao.SessionDao;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;

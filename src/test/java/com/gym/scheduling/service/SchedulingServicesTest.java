@@ -5,7 +5,7 @@ import com.gym.core.model.ClassSession;
 import com.gym.core.model.Manager;
 import com.gym.core.model.Session;
 import com.gym.core.model.Trainer;
-import com.gym.scheduling.dao.SessionDao;
+import com.gym.scheduling.dao.SchedulingSessionDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,12 +69,43 @@ class SchedulingServicesTest {
     }
 
     @Test
+    void classCreationRejectsSessionsOutsideOpeningHours() {
+        Manager manager = new Manager();
+        manager.setRole(com.gym.core.model.StaffRole.MANAGER);
+        com.gym.app.Session.login(manager);
+        LocalDate date = LocalDate.now().plusDays(3);
+
+        IllegalArgumentException error = assertThrows(
+                IllegalArgumentException.class,
+                () -> new ClassSchedulingService().createClass(
+                        "Morning class", 1, 1, 1,
+                        date.atTime(5, 0), date.atTime(6, 0)));
+
+        assertTrue(error.getMessage().contains("06:00"));
+    }
+
+    @Test
+    void ptBookingRejectsSessionEndingAfterClosingTime() {
+        Manager manager = new Manager();
+        manager.setRole(com.gym.core.model.StaffRole.MANAGER);
+        com.gym.app.Session.login(manager);
+        LocalDate date = LocalDate.now().plusDays(3);
+
+        IllegalArgumentException error = assertThrows(
+                IllegalArgumentException.class,
+                () -> new PtSchedulingService().bookSession(
+                        1, 1, 1, date.atTime(21, 45), date.atTime(22, 15)));
+
+        assertTrue(error.getMessage().contains("22:00"));
+    }
+
+    @Test
     void availabilitySupportsTrainerAndReturnsFreeStarts() {
         Trainer trainer = new Trainer();
         trainer.setRole(com.gym.core.model.StaffRole.TRAINER);
         com.gym.app.Session.login(trainer);
 
-        SessionDao sessionDao = new SessionDao() {
+        SchedulingSessionDao sessionDao = new SchedulingSessionDao() {
             @Override
             public List<Session> findStartingBetween(
                     LocalDateTime from, LocalDateTime to) {
@@ -88,9 +119,54 @@ class SchedulingServicesTest {
         List<LocalDateTime> starts = service.findAvailableStarts(
                 1, 1, date, Duration.ofHours(1));
 
-        assertEquals(31, starts.size());
+        assertEquals(61, starts.size());
         assertEquals(date.atTime(6, 0), starts.get(0));
         assertEquals(date.atTime(21, 0), starts.get(starts.size() - 1));
+    }
+
+    @Test
+    void availabilityRoundsBusyEndToNextQuarterHour() {
+        Trainer trainer = new Trainer();
+        trainer.setRole(com.gym.core.model.StaffRole.TRAINER);
+        com.gym.app.Session.login(trainer);
+
+        LocalDate date = LocalDate.now().plusDays(3);
+        ClassSession busy = new ClassSession();
+        busy.setRoomId(1);
+        busy.setTrainerId(2);
+        busy.setStartTime(date.atTime(6, 0));
+        busy.setEndTime(date.atTime(6, 10));
+        SchedulingSessionDao sessionDao = new SchedulingSessionDao() {
+            @Override
+            public List<Session> findStartingBetween(
+                    LocalDateTime from, LocalDateTime to) {
+                return List.of(busy);
+            }
+        };
+
+        List<LocalDateTime> starts = new AvailabilityService(
+                new SessionService(sessionDao)).findAvailableStarts(
+                1, 2, date, Duration.ofMinutes(30));
+
+        assertEquals(date.atTime(6, 15), starts.get(0));
+        assertTrue(starts.stream().allMatch(start -> start.getMinute() % 15 == 0));
+    }
+
+    @Test
+    void availabilityRejectsDurationOutsideAllowedRangeOrStep() {
+        Manager manager = new Manager();
+        manager.setRole(com.gym.core.model.StaffRole.MANAGER);
+        com.gym.app.Session.login(manager);
+        AvailabilityService service =
+                new AvailabilityService(new SessionService(new SchedulingSessionDao()));
+        LocalDate date = LocalDate.now().plusDays(3);
+
+        assertThrows(IllegalArgumentException.class, () -> service.findAvailableStarts(
+                1, 1, date, Duration.ofMinutes(15)));
+        assertThrows(IllegalArgumentException.class, () -> service.findAvailableStarts(
+                1, 1, date, Duration.ofMinutes(195)));
+        assertThrows(IllegalArgumentException.class, () -> service.findAvailableStarts(
+                1, 1, date, Duration.ofMinutes(35)));
     }
 
     @Test

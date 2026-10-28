@@ -82,9 +82,7 @@ public class PtSchedulingService {
             throw new IllegalArgumentException("Vui lòng chọn hội viên, phòng và HLV.");
         }
 
-        if (start == null || end == null || !end.isAfter(start)) {
-            throw new IllegalArgumentException("Khoảng thời gian không hợp lệ.");
-        }
+        SessionTimeRules.validateRange(start, end);
         if (!start.isAfter(LocalDateTime.now())) {
             throw new IllegalArgumentException("Không thể đặt lịch PT trong quá khứ.");
         }
@@ -114,14 +112,25 @@ public class PtSchedulingService {
 
         sessionService.findRoomConflict(session)
                 .ifPresent(s -> {
-                    throw new IllegalStateException("Phòng đã có lịch.");
+                    throw conflictMessage("Phòng " + room.getRoomName(), s);
                 });
 
         sessionService.findTrainerConflict(session)
                 .ifPresent(s -> {
-                    throw new IllegalStateException("HLV đã có lịch.");
+                    throw conflictMessage("Huấn luyện viên " + trainer.getFullName(), s);
                 });
 
         return ptDao.insert(session);
+    }
+
+    private static IllegalStateException conflictMessage(String resource, Session conflict) {
+        String title = conflict.getSessionTitle();
+        String description = title == null || title.isBlank()
+                ? "buổi tập #" + conflict.getSessionId()
+                : "\"" + title + "\" (#" + conflict.getSessionId() + ")";
+        return new IllegalStateException(
+                resource + " đã có buổi tập " + description
+                        + " từ " + conflict.getStartTime()
+                        + " đến " + conflict.getEndTime() + ".");
     }
 }

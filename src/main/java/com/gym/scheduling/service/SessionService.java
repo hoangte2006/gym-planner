@@ -3,15 +3,18 @@ package com.gym.scheduling.service;
 import com.gym.core.DateTimeUtils;
 import com.gym.core.dao.ClassRegistrationDao;
 import com.gym.core.dao.RoomDao;
+import com.gym.core.dao.SessionEquipmentUsageDao;
 import com.gym.core.dao.TrainerDao;
 import com.gym.core.model.BookingStatus;
 import com.gym.core.model.ClassSession;
+import com.gym.core.model.Equipment;
 import com.gym.core.model.PtSession;
 import com.gym.core.model.Room;
 import com.gym.core.model.Session;
+import com.gym.core.model.SessionEquipmentUsage;
 import com.gym.core.model.StaffRole;
 import com.gym.core.model.Trainer;
-import com.gym.scheduling.dao.SessionDao;
+import com.gym.scheduling.dao.SchedulingSessionDao;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -31,28 +34,43 @@ import java.util.Optional;
  */
 public class SessionService {
 
-    private final SessionDao sessionDao;
+    private final SchedulingSessionDao sessionDao;
     private final RoomDao roomDao;
     private final TrainerDao trainerDao;
     private final ClassRegistrationDao registrationDao;
+    private final SessionEquipmentUsageDao equipmentUsageDao;
 
     public SessionService() {
-        this(new SessionDao(), new RoomDao(), new TrainerDao(), new ClassRegistrationDao());
+        this(new SchedulingSessionDao(), new RoomDao(), new TrainerDao(),
+                new ClassRegistrationDao(), new SessionEquipmentUsageDao());
     }
 
-    public SessionService(SessionDao sessionDao) {
-        this(sessionDao, new RoomDao(), new TrainerDao(), new ClassRegistrationDao());
+    public SessionService(SchedulingSessionDao sessionDao) {
+        this(sessionDao, new RoomDao(), new TrainerDao(),
+                new ClassRegistrationDao(), new SessionEquipmentUsageDao());
     }
 
     public SessionService(
-            SessionDao sessionDao,
+            SchedulingSessionDao sessionDao,
             RoomDao roomDao,
             TrainerDao trainerDao,
             ClassRegistrationDao registrationDao) {
+        this(sessionDao, roomDao, trainerDao, registrationDao,
+                new SessionEquipmentUsageDao());
+    }
+
+    public SessionService(
+            SchedulingSessionDao sessionDao,
+            RoomDao roomDao,
+            TrainerDao trainerDao,
+            ClassRegistrationDao registrationDao,
+            SessionEquipmentUsageDao equipmentUsageDao) {
         this.sessionDao = Objects.requireNonNull(sessionDao, "sessionDao must not be null");
         this.roomDao = Objects.requireNonNull(roomDao, "roomDao must not be null");
         this.trainerDao = Objects.requireNonNull(trainerDao, "trainerDao must not be null");
         this.registrationDao = Objects.requireNonNull(registrationDao, "registrationDao must not be null");
+        this.equipmentUsageDao = Objects.requireNonNull(
+                equipmentUsageDao, "equipmentUsageDao must not be null");
     }
 
     /**
@@ -68,11 +86,7 @@ public class SessionService {
         LocalDateTime from = monday.atStartOfDay();
         LocalDateTime to = monday.plusWeeks(1).atStartOfDay();
 
-        return sessionDao.findStartingBetween(from, to).stream()
-                .sorted(Comparator.comparing(
-                        Session::getStartTime,
-                        Comparator.nullsLast(Comparator.naturalOrder())))
-                .toList();
+        return List.copyOf(sessionDao.findStartingBetween(from, to));
     }
 
     public List<Session> findMyWeeklySchedule(LocalDate dateInWeek) {
@@ -142,7 +156,33 @@ public class SessionService {
                 .stream().findFirst().ifPresent(conflict -> {
                     throw conflictMessage("Huấn luyện viên", conflict);
                 });
+        validateEquipmentReservations(candidate);
         sessionDao.update(candidate);
+    }
+
+    private void validateEquipmentReservations(Session candidate) {
+        for (SessionEquipmentUsage usage :
+                equipmentUsageDao.findBySession(candidate.getSessionId())) {
+            if (usage.getReservedFrom().isBefore(candidate.getStartTime())
+                    || usage.getReservedTo().isAfter(candidate.getEndTime())) {
+                throw new IllegalStateException(
+                        "Không thể dời buổi tập: thời gian đặt thiết bị #"
+                                + usage.getEquipmentId()
+                                + " sẽ nằm ngoài thời gian mới của buổi.");
+            }
+
+            List<Equipment> available = sessionDao.findAvailableEquipment(
+                    candidate.getRoomId(), usage.getReservedFrom(),
+                    usage.getReservedTo(), candidate.getSessionId());
+            boolean stillAvailable = available.stream().anyMatch(equipment ->
+                    Objects.equals(equipment.getEquipmentId(), usage.getEquipmentId()));
+            if (!stillAvailable) {
+                throw new IllegalStateException(
+                        "Không thể dời buổi tập: thiết bị #"
+                                + usage.getEquipmentId()
+                                + " không còn khả dụng trong phòng hoặc khung giờ mới.");
+            }
+        }
     }
 
     public void changePtStatus(int sessionId, BookingStatus newStatus) {
@@ -213,8 +253,12 @@ public class SessionService {
     }
 
     private static IllegalStateException conflictMessage(String resource, Session conflict) {
-        return new IllegalStateException(resource + " đã có buổi tập #"
-                + conflict.getSessionId() + " từ " + conflict.getStartTime()
+        String title = conflict.getSessionTitle();
+        String description = title == null || title.isBlank()
+                ? "buổi tập #" + conflict.getSessionId()
+                : "\"" + title + "\" (#" + conflict.getSessionId() + ")";
+        return new IllegalStateException(resource + " đã có buổi tập "
+                + description + " từ " + conflict.getStartTime()
                 + " đến " + conflict.getEndTime() + ".");
     }
 
@@ -311,12 +355,8 @@ public class SessionService {
     private static void validateCandidate(Session candidate) {
         Objects.requireNonNull(candidate, "candidate must not be null");
 
-        if (candidate.getStartTime() == null || candidate.getEndTime() == null) {
-            throw new IllegalArgumentException("Session start time and end time are required");
-        }
-        if (!candidate.getEndTime().isAfter(candidate.getStartTime())) {
-            throw new IllegalArgumentException("Session end time must be after start time");
-        }
+        SessionTimeRules.validateRange(
+                candidate.getStartTime(), candidate.getEndTime());
         if (candidate.getRoomId() == null) {
             throw new IllegalArgumentException("Session room ID is required");
         }

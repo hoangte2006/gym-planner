@@ -31,7 +31,6 @@ import com.gym.core.model.Staff;
 import com.gym.core.model.StaffRole;
 import com.gym.core.model.Trainer;
 import com.gym.core.model.Visitor;
-import com.gym.scheduling.dao.SessionDao;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 

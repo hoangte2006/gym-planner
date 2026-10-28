@@ -164,17 +164,7 @@ public class ClassSchedulingService {
             );
         }
 
-        if (startTime == null || endTime == null) {
-            throw new IllegalArgumentException(
-                "Vui lòng chọn giờ bắt đầu và kết thúc."
-            );
-        }
-
-        if (!endTime.isAfter(startTime)) {
-            throw new IllegalArgumentException(
-                "Giờ kết thúc phải sau giờ bắt đầu."
-            );
-        }
+        SessionTimeRules.validateRange(startTime, endTime);
 
         if (!startTime.isAfter(LocalDateTime.now())) {
             throw new IllegalArgumentException(
@@ -187,8 +177,12 @@ public class ClassSchedulingService {
             String resource,
             Session conflict) {
 
+        String title = conflict.getSessionTitle();
+        String description = title == null || title.isBlank()
+            ? "buổi tập #" + conflict.getSessionId()
+            : "\"" + title + "\" (#" + conflict.getSessionId() + ")";
         return new IllegalStateException(
-            resource + " đã có buổi tập #" + conflict.getSessionId()
+            resource + " đã có buổi tập " + description
             + " từ " + conflict.getStartTime()
             + " đến " + conflict.getEndTime() + "."
         );

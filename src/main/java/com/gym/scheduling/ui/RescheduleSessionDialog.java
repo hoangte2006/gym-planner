@@ -78,11 +78,10 @@ final class RescheduleSessionDialog {
     }
 
     private static String[] times() {
-        String[] result = new String[33];
+        String[] result = new String[65];
         for (int i = 0; i < result.length; i++) {
-            result[i] = String.format("%02d:%02d", (i * 30) / 60 + 6, (i * 30) % 60);
+            result[i] = String.format("%02d:%02d", (i * 15) / 60 + 6, (i * 15) % 60);
         }
-        result[result.length - 1] = "22:00";
         return result;
     }
 

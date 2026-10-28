@@ -1,9 +1,5 @@
-package com.gym.scheduling.dao;
+package com.gym.core.dao;
 
-import com.gym.core.dao.AbstractJdbcDao;
-import com.gym.core.dao.ClassSessionDao;
-import com.gym.core.dao.PtSessionDao;
-import com.gym.core.dao.Sql;
 import com.gym.core.model.ClassSession;
 import com.gym.core.model.Equipment;
 import com.gym.core.model.EquipmentStatus;
@@ -148,101 +144,6 @@ public class SessionDao extends AbstractJdbcDao<Session, Integer> {
         return queryList(selectSql() + " WHERE s.Trainer_ID = ? ORDER BY s.Start_Time",
                 ps -> ps.setInt(1, trainerId));
     }
-
-    /**
- * Tìm các buổi có khả năng xung đột với khung giờ cần kiểm tra.
- * Chỉ lấy buổi cùng phòng HOẶC cùng huấn luyện viên.
- * Bỏ qua các buổi PT đã bị hủy.
- */
-public List<Session> findPotentialConflicts(
-        Integer roomId,
-        Integer trainerId,
-        LocalDateTime start,
-        LocalDateTime end) {
-
-    String sql = selectSql()
-            + " WHERE (s.Room_ID = ? OR s.Trainer_ID = ?)"
-            + " AND s.Start_Time < ?"
-            + " AND s.End_Time > ?"
-            + " AND (s.Session_Type <> 'PT' OR p.Booking_Status IS NULL"
-            + " OR p.Booking_Status <> 'Cancelled')"
-            + " ORDER BY s.Start_Time";
-
-    return queryList(sql, ps -> {
-        ps.setObject(1, roomId);
-        ps.setObject(2, trainerId);
-        Sql.setDateTime(ps, 3, end);
-        Sql.setDateTime(ps, 4, start);
-    });
-}
-
-public List<Session> findRoomConflicts(
-        Integer roomId,
-        LocalDateTime start,
-        LocalDateTime end) {
-    return findRoomConflicts(roomId, start, end, null);
-}
-
-public List<Session> findRoomConflicts(
-        Integer roomId,
-        LocalDateTime start,
-        LocalDateTime end,
-        Integer exceptSessionId) {
-
-    String exclude = exceptSessionId == null ? "" : " AND s.Session_ID <> ?";
-    String sql = selectSql()
-            + " WHERE s.Room_ID = ?"
-            + " AND s.Start_Time < ?"
-            + " AND s.End_Time > ?"
-            + exclude
-            + " AND (s.Session_Type <> 'PT'"
-            + " OR p.Booking_Status IS NULL"
-            + " OR p.Booking_Status <> 'Cancelled')"
-            + " ORDER BY s.Start_Time";
-
-    return queryList(sql, ps -> {
-        ps.setObject(1, roomId);
-        Sql.setDateTime(ps, 2, end);
-        Sql.setDateTime(ps, 3, start);
-        if (exceptSessionId != null) {
-            ps.setInt(4, exceptSessionId);
-        }
-    });
-}
-
-public List<Session> findTrainerConflicts(
-        Integer trainerId,
-        LocalDateTime start,
-        LocalDateTime end) {
-    return findTrainerConflicts(trainerId, start, end, null);
-}
-
-public List<Session> findTrainerConflicts(
-        Integer trainerId,
-        LocalDateTime start,
-        LocalDateTime end,
-        Integer exceptSessionId) {
-
-    String exclude = exceptSessionId == null ? "" : " AND s.Session_ID <> ?";
-    String sql = selectSql()
-            + " WHERE s.Trainer_ID = ?"
-            + " AND s.Start_Time < ?"
-            + " AND s.End_Time > ?"
-            + exclude
-            + " AND (s.Session_Type <> 'PT'"
-            + " OR p.Booking_Status IS NULL"
-            + " OR p.Booking_Status <> 'Cancelled')"
-            + " ORDER BY s.Start_Time";
-
-    return queryList(sql, ps -> {
-        ps.setObject(1, trainerId);
-        Sql.setDateTime(ps, 2, end);
-        Sql.setDateTime(ps, 3, start);
-        if (exceptSessionId != null) {
-            ps.setInt(4, exceptSessionId);
-        }
-    });
-}
 
 public List<Equipment> findAvailableEquipment(
         Integer roomId,

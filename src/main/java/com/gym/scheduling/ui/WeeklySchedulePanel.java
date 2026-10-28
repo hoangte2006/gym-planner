@@ -28,15 +28,17 @@ import java.util.Optional;
 public class WeeklySchedulePanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
+    private static final String[] COLUMNS = {
+            "Mã buổi", "Loại", "Tên buổi", "Ngày", "Bắt đầu", "Kết thúc",
+            "Phòng", "HLV", "Trạng thái"
+    };
     private final SessionService sessionService;
     private final boolean trainerOnly;
     private LocalDate weekDate = LocalDate.now();
     private List<Session> displayedSessions = List.of();
     private final JLabel weekLabel = new JLabel("", SwingConstants.CENTER);
     private final JLabel statusLabel = new JLabel(" ");
-    private final DefaultTableModel tableModel = new DefaultTableModel(
-            new Object[]{"Mã buổi", "Loại", "Tên buổi", "Ngày", "Bắt đầu", "Kết thúc",
-                    "Phòng", "HLV", "Trạng thái"}, 0) {
+    private final DefaultTableModel tableModel = new DefaultTableModel(COLUMNS, 0) {
         private static final long serialVersionUID = 1L;
 
         @Override
@@ -137,11 +139,12 @@ public class WeeklySchedulePanel extends JPanel {
 
     private void showSessions(List<Session> sessions) {
         displayedSessions = List.copyOf(sessions);
-        tableModel.setRowCount(0);
-        for (Session session : sessions) {
+        Object[][] rows = new Object[sessions.size()][COLUMNS.length];
+        for (int i = 0; i < sessions.size(); i++) {
+            Session session = sessions.get(i);
             LocalDateTime start = session.getStartTime();
             LocalDateTime end = session.getEndTime();
-            tableModel.addRow(new Object[]{
+            rows[i] = new Object[]{
                     session.getSessionId(),
                     session.getSessionType() == null ? "" : session.getSessionType().getLabel(),
                     session.getSessionTitle(),
@@ -152,8 +155,9 @@ public class WeeklySchedulePanel extends JPanel {
                     session.getTrainerId(),
                     session instanceof PtSession pt && pt.getBookingStatus() != null
                             ? pt.getBookingStatus().getLabel() : ""
-            });
+            };
         }
+        tableModel.setDataVector(rows, COLUMNS);
         statusLabel.setText(sessions.isEmpty()
                 ? (trainerOnly
                 ? "Tuần này bạn chưa được phân lịch."

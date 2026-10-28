@@ -4,6 +4,7 @@ import com.gym.core.dao.ClassRegistrationDao;
 import com.gym.core.dao.ClassSessionDao;
 import com.gym.core.dao.MemberDao;
 import com.gym.core.dao.MembershipDao;
+import com.gym.core.dao.SessionDao;
 import com.gym.core.model.AttendanceStatus;
 import com.gym.core.model.ClassRegistration;
 import com.gym.core.model.ClassRegistrationKey;
@@ -11,8 +12,6 @@ import com.gym.core.model.ClassSession;
 import com.gym.core.model.Member;
 import com.gym.core.model.Membership;
 import com.gym.core.model.MembershipStatus;
-import com.gym.scheduling.dao.SessionDao;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;

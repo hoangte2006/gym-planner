@@ -1,7 +1,9 @@
 package com.gym.scheduling.service;
 
 import com.gym.core.model.ClassSession;
+import com.gym.core.model.Manager;
 import com.gym.core.model.Session;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -12,6 +14,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class SessionServiceTest {
 
     private static final LocalDateTime BASE = LocalDateTime.of(2026, 10, 12, 9, 0);
+
+    @AfterEach
+    void logout() {
+        com.gym.app.Session.logout();
+    }
 
     @Test
     void findsRoomConflictAndReturnsBlockingSession() {
@@ -81,6 +88,18 @@ class SessionServiceTest {
                 () -> SessionService.findRoomConflict(candidate, List.of()));
     }
 
+    @Test
+    void reschedulingRejectsTimesOutsideQuarterHourGridBeforeDatabaseAccess() {
+        Manager manager = new Manager();
+        manager.setRole(com.gym.core.model.StaffRole.MANAGER);
+        com.gym.app.Session.login(manager);
+        ClassSession candidate = (ClassSession) session(
+                11, 1, 2, BASE.withMinute(5), BASE.withMinute(5).plusHours(1));
+        SessionService service = new SessionService();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.updateSession(candidate));
+    }
     private static Session session(Integer id, Integer roomId, Integer trainerId,
                                    LocalDateTime start, LocalDateTime end) {
         ClassSession session = new ClassSession();

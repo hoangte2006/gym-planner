@@ -4,6 +4,7 @@ import com.gym.core.dao.ClassRegistrationDao;
 import com.gym.core.dao.ClassSessionDao;
 import com.gym.core.dao.MemberDao;
 import com.gym.core.dao.MembershipDao;
+import com.gym.core.dao.SessionDao;
 import com.gym.core.dao.RoomDao;
 import com.gym.core.dao.TrainerDao;
 import com.gym.core.model.AttendanceStatus;
@@ -18,7 +19,7 @@ import com.gym.core.model.MembershipStatus;
 import com.gym.core.model.PtSession;
 import com.gym.core.model.Session;
 import com.gym.core.model.SessionType;
-import com.gym.scheduling.dao.SessionDao;
+import com.gym.scheduling.dao.SchedulingSessionDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -147,7 +148,7 @@ class SchedulingWeek3Test {
         assertTrue(seatClaimed.get());
     }
 
-    private static SessionService service(SessionDao dao) {
+    private static SessionService service(SchedulingSessionDao dao) {
         return new SessionService(dao, new RoomDao(), new TrainerDao(),
                 new ClassRegistrationDao());
     }
@@ -159,7 +160,8 @@ class SchedulingWeek3Test {
         session.setMemberId(12);
         session.setRoomId(3);
         session.setTrainerId(5);
-        session.setStartTime(LocalDateTime.now().plusDays(3).withHour(10).withMinute(0));
+        session.setStartTime(LocalDateTime.now().plusDays(3).withHour(10)
+                .withMinute(0).withSecond(0).withNano(0));
         session.setEndTime(session.getStartTime().plusHours(1));
         session.setBookingStatus(status);
         return session;
@@ -179,7 +181,7 @@ class SchedulingWeek3Test {
         return session;
     }
 
-    private static final class FakeSessionDao extends SessionDao {
+    private static final class FakeSessionDao extends SchedulingSessionDao {
         private final PtSession current;
         private List<Session> roomConflicts = List.of();
         private List<Session> trainerConflicts = List.of();
