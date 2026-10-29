@@ -2,7 +2,6 @@ package com.gym.core.dao;
 
 import com.gym.core.model.ClassSession;
 import com.gym.core.model.SessionType;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -39,7 +38,7 @@ public class ClassSessionDao extends AbstractJdbcDao<ClassSession, Integer> {
     }
 
     /** Dùng chung với SessionDao (cùng tên cột). Cột con có thể NULL khi đọc qua LEFT JOIN. */
-    static ClassSession map(ResultSet rs) throws SQLException {
+    public static ClassSession map(ResultSet rs) throws SQLException {
         ClassSession c = new ClassSession();
         SessionDao.fillBase(c, rs);
         String name = rs.getString("Class_Name");
