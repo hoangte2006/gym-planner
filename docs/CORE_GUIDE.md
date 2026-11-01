@@ -85,6 +85,9 @@ Mỗi bảng một DAO trong `com.gym.core.dao`. Tạo bằng `new` (DAO không 
 | MAINTENANCE_LOG | `MaintenanceLogDao` | `MaintenanceLogKey(equipmentId, logNo)` | `findByEquipment` |
 | SESSION_EQUIPMENT_USAGE | `SessionEquipmentUsageDao` | `Integer` | `findBySession`, `findByEquipment` |
 
+Riêng truy vấn xung đột lịch tập, TV5 dùng `scheduling/dao/SchedulingSessionDao`
+kế thừa `core/dao/SessionDao`; các hàm tìm xung đột thuộc DAO của module scheduling.
+
 Sáu hàm chung cho mọi DAO:
 
 ```java
