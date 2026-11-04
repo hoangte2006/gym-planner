@@ -109,4 +109,21 @@ public class RoomDao extends AbstractJdbcDao<Room, Integer> {
         });
     }
 
+    /**
+     * Lấy Max_Capacity lớn nhất trong các lớp đang được xếp tại phòng.
+     *
+     * Trả về 0 nếu phòng chưa có lớp nào.
+     */
+    public long findMaxClassCapacityInRoom(int roomId) {
+
+        String sql = """
+            SELECT COALESCE(MAX(c.Max_Capacity), 0)
+            FROM [SESSION] s
+            JOIN CLASS c
+                ON c.Session_ID = s.Session_ID
+            WHERE s.Room_ID = ?
+            """;
+
+        return count(sql, ps -> ps.setInt(1, roomId));
+    }
 }

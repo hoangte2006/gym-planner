@@ -40,6 +40,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -85,7 +86,11 @@ class DaoIntegrationTest {
         assertFalse(new PtSessionDao().findAll().isEmpty());
         new ClassRegistrationDao().findAll();
         assertFalse(new EquipmentDao().findAll().isEmpty());
-        assertFalse(new MaintenanceLogDao().findAll().isEmpty());
+        assertFalse(new MaintenanceLogDao() {
+            public List<MaintenanceLog> searchByEquipment(Integer equipmentId, String keyword) {
+                return List.of();
+            }
+        }.findAll().isEmpty());
         new SessionEquipmentUsageDao().findAll();
     }
 
@@ -135,7 +140,11 @@ class DaoIntegrationTest {
         SessionDao sessionDao = new SessionDao();
         ClassRegistrationDao regDao = new ClassRegistrationDao();
         EquipmentDao equipmentDao = new EquipmentDao();
-        MaintenanceLogDao logDao = new MaintenanceLogDao();
+        MaintenanceLogDao logDao = new MaintenanceLogDao() {
+            public List<MaintenanceLog> searchByEquipment(Integer equipmentId, String keyword) {
+                return List.of();
+            }
+        };
         SessionEquipmentUsageDao usageDao = new SessionEquipmentUsageDao();
 
         long base = System.nanoTime() % 10_000_000L;

@@ -121,5 +121,4 @@ public class MaintenanceLogDao extends AbstractJdbcDao<MaintenanceLog, Maintenan
             ps.setString(6, pattern);
         });
     }
-
 }

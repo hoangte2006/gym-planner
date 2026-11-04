@@ -1,14 +1,12 @@
 package com.gym.facility.service;
 
 import com.gym.app.Session;
+import com.gym.core.Tx;
 import com.gym.core.dao.EquipmentDao;
 import com.gym.core.dao.MaintenanceLogDao;
 import com.gym.core.dao.StaffDao;
 import com.gym.core.exception.BusinessException;
-import com.gym.core.model.Equipment;
-import com.gym.core.model.MaintenanceLog;
-import com.gym.core.model.Staff;
-import com.gym.core.model.StaffRole;
+import com.gym.core.model.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -33,27 +31,39 @@ public class MaintenanceLogService {
     public MaintenanceLog create(MaintenanceLog log) {
         requireMaintananceAccess(Session.getRole());
         validate(log);
-        if (log.getLogNo() != null) {
-            throw new BusinessException("Log_no được hệ thống tự sinh, không nhập thủ công.");
-        }
-        Equipment equipment = equipmentDao.findById(log.getEquipmentId())
-                .orElseThrow(() -> new BusinessException("Thiết bị không tồn tại."));
-        if (equipment.getEquipmentId() == null) {
-            throw new BusinessException("Thiết bị không có mã hợp lệ.");
-        }
-        Staff signer = staffDao.findById(log.getLoggedBy())
-                .orElseThrow(() -> new BusinessException("Nhân viên ký phiếu không tồn tại."));
-        if (signer.getRole() != StaffRole.RECEPTIONIST && signer.getRole() != StaffRole.MANAGER) {
-            throw new BusinessException("Phiếu bảo trì phải do Lễ tân hoặc Quản lý ghi nhận (BR-FAC-05).");
-        }
-        if (log.getMaintenanceDate() == null) {
-            log.setMaintenanceDate(LocalDate.now());
-        }
-        if (log.getCost() == null) {
-            log.setCost(BigDecimal.ZERO);
-        }
-        // MaintenanceLogDao.insert() sinh MAX(Log_no)+1 dưới UPDLOCK,HOLDLOCK và commit cùng INSERT.
-        return maintenanceLogDao.insert(log);
+        return Tx.call(() -> {
+            if (log.getLogNo() != null) {
+                throw new BusinessException("Log_no được hệ thống tự sinh, không nhập thủ công.");
+            }
+            Equipment equipment = equipmentDao.findById(log.getEquipmentId())
+                    .orElseThrow(() -> new BusinessException("Thiết bị không tồn tại."));
+
+            if (equipment.getEquipmentId() == null) {
+                throw new BusinessException("Thiết bị không có mã hợp lệ.");
+            }
+
+            if(equipment.getOperationalStatus() == EquipmentStatus.UNDER_MAINTENANCE) {
+                throw new BusinessException("Thiết bị này đang được bảo trì");
+            }
+
+            Staff signer = staffDao.findById(log.getLoggedBy())
+                    .orElseThrow(() -> new BusinessException("Nhân viên ký phiếu không tồn tại."));
+            if (signer.getRole() != StaffRole.RECEPTIONIST && signer.getRole() != StaffRole.MANAGER) {
+                throw new BusinessException("Phiếu bảo trì phải do Lễ tân hoặc Quản lý ghi nhận (BR-FAC-05).");
+            }
+            if (log.getMaintenanceDate() == null) {
+                log.setMaintenanceDate(LocalDate.now());
+            }
+            if (log.getCost() == null) {
+                log.setCost(BigDecimal.ZERO);
+            }
+
+            // MaintenanceLogDao.insert() sinh MAX(Log_no)+1 dưới UPDLOCK,HOLDLOCK và commit cùng INSERT.
+            MaintenanceLog saved =  maintenanceLogDao.insert(log);
+            equipment.setOperationalStatus(EquipmentStatus.UNDER_MAINTENANCE);
+            equipmentDao.update(equipment);
+            return saved;
+        });
     }
 
     public List<MaintenanceLog> findByEquipment(Integer equipmentId) {
@@ -124,7 +134,7 @@ public class MaintenanceLogService {
 
     public static void requireMaintananceAccess(StaffRole role) {
         if (role != StaffRole.MANAGER) {
-            throw new BusinessException("Chỉ Quản lý mới được xem được Staff.");
+            throw new BusinessException("Chỉ Quản lý mới dùng được chức năng này.");
         }
     }
 }

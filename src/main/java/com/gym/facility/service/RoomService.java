@@ -1,8 +1,10 @@
 package com.gym.facility.service;
 
 import com.gym.app.Session;
+import com.gym.core.dao.EquipmentDao;
 import com.gym.core.dao.PageResult;
 import com.gym.core.dao.RoomDao;
+import com.gym.core.dao.SessionDao;
 import com.gym.core.exception.BusinessException;
 import com.gym.core.model.Room;
 import com.gym.core.model.StaffRole;
@@ -15,9 +17,13 @@ import java.util.Optional;
 public class RoomService {
 
     private final RoomDao roomDao;
+    private final SessionDao sessionDao;
+    private final EquipmentDao equipmentDao;
 
-    public RoomService(RoomDao roomDao) {
+    public RoomService(RoomDao roomDao, SessionDao sessionDao, EquipmentDao equipmentDao) {
         this.roomDao = Objects.requireNonNull(roomDao, "RoomDao không được null");
+        this.sessionDao = Objects.requireNonNull(sessionDao, "SessionDao không được null");
+        this.equipmentDao = Objects.requireNonNull(equipmentDao, "equipmentDao không được null");
     }
 
     public Room createRoom(Room room) {
@@ -38,17 +44,55 @@ public class RoomService {
 
         requireRoomAccess(Session.getRole());
 
+        // Bước 1: Kiểm tra dữ liệu đầu vào.
         validateRoom(room);
         requirePositiveId(room.getRoomId());
-        if (roomDao.findById(room.getRoomId()).isEmpty()) {
-            throw new BusinessException("Phòng cần cập nhật không tồn tại.");
-        }
-        Optional<Room> existing = roomDao.findByName(room.getRoomName().trim());
-        if (existing.isPresent() && !Objects.equals(existing.get().getRoomId(), room.getRoomId())) {
+
+        // Bước 2: Kiểm tra phòng có tồn tại không.
+        Room existingRoom = roomDao.findById(room.getRoomId())
+                .orElseThrow(() ->
+                        new BusinessException("Phòng cần cập nhật không tồn tại.")
+                );
+
+        // Bước 3: Kiểm tra tên phòng có bị trùng không.
+        Optional<Room> existingName =
+                roomDao.findByName(room.getRoomName().trim());
+
+        if (existingName.isPresent()
+                && !Objects.equals(
+                existingName.get().getRoomId(),
+                room.getRoomId()
+        )) {
+
             throw new BusinessException("Tên phòng đã được sử dụng.");
         }
+
+        // Bước 4: Chỉ kiểm tra sức chứa khi người dùng giảm Capacity.
+        if (room.getCapacity() < existingRoom.getCapacity()) {
+
+            long maxClassCapacity =
+                    roomDao.findMaxClassCapacityInRoom(room.getRoomId());
+
+            if (room.getCapacity() < maxClassCapacity) {
+
+                throw new BusinessException(
+                        "Không thể giảm sức chứa phòng xuống "
+                                + room.getCapacity()
+                                + " người. "
+                                + "Phòng hiện có lớp yêu cầu sức chứa tối đa "
+                                + maxClassCapacity
+                                + " người. "
+                                + "Vui lòng điều chỉnh lớp trước."
+                );
+            }
+        }
+
+        // Bước 5: Chuẩn hóa dữ liệu.
         room.setRoomName(room.getRoomName().trim());
+
+        // Bước 6: Cập nhật database.
         roomDao.update(room);
+
         return room;
     }
 
@@ -101,6 +145,15 @@ public class RoomService {
         if (roomDao.findById(roomId).isEmpty()) {
             throw new BusinessException("Phòng không tồn tại hoặc đã bị xóa.");
         }
+
+        if(!sessionDao.findByRoom(roomId).isEmpty()) {
+            throw new BusinessException("Phòng này đang được tham chiếu");
+        }
+
+        if(!equipmentDao.findByRoom(roomId).isEmpty()) {
+            throw new BusinessException("Thiết bị này đã được tham chiếu");
+        }
+
         // Nếu phòng đang được SESSION tham chiếu, FK sẽ chặn xóa; lỗi được DAO dịch.
         roomDao.deleteById(roomId);
     }
@@ -131,7 +184,7 @@ public class RoomService {
 
     public static void requireRoomAccess(StaffRole role) {
         if (role != StaffRole.MANAGER) {
-            throw new BusinessException("Chỉ Quản lý mới được xem được Staff.");
+            throw new BusinessException("Chỉ Quản lý mới dùng được chức năng này.");
         }
     }
 }

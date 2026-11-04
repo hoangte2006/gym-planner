@@ -145,6 +145,78 @@ public class SessionDao extends AbstractJdbcDao<Session, Integer> {
                 ps -> ps.setInt(1, trainerId));
     }
 
+    public List<Session> findByRoom(int roomId) {
+        return queryList(selectSql() + " WHERE s.Room_ID = ? ORDER BY s.Start_Time",
+                ps -> ps.setInt(1, roomId));
+    }
+
+    /**
+     * Đếm số Session của Trainer.
+     *
+     * - Bao gồm Session Class.
+     * - Bao gồm PT Booking không bị hủy.
+     * - Bao gồm cả Session quá khứ và tương lai.
+     */
+    public long countByTrainer(int trainerId) {
+
+        String sql = """
+            SELECT COUNT(*)
+            FROM [SESSION] s
+            LEFT JOIN PT_BOOKING p
+                ON p.Session_ID = s.Session_ID
+            WHERE s.Trainer_ID = ?
+              AND (
+                    s.Session_Type = 'Class'
+                    OR p.Booking_Status <> 'Cancelled'
+              )
+            """;
+
+        return count(sql, ps -> ps.setInt(1, trainerId));
+    }
+
+    /**
+     * Lấy các Session sắp tới của Trainer.
+     *
+     * - Chỉ lấy Session có thời gian bắt đầu lớn hơn hiện tại.
+     * - Bao gồm Class.
+     * - PT Booking đã hủy không được hiển thị.
+     */
+    public List<Session> findUpcomingByTrainer(
+            int trainerId,
+            LocalDateTime now
+    ) {
+        String sql = """
+            SELECT
+                s.Session_ID,
+                s.Session_Type,
+                s.Room_ID,
+                s.Trainer_ID,
+                s.Start_Time,
+                s.End_Time,
+                c.Class_Name,
+                c.Max_Capacity,
+                p.Visitor_ID AS Member_ID,
+                p.Booking_Status
+            FROM [SESSION] s
+            LEFT JOIN CLASS c
+                ON c.Session_ID = s.Session_ID
+            LEFT JOIN PT_BOOKING p
+                ON p.Session_ID = s.Session_ID
+            WHERE s.Trainer_ID = ?
+              AND s.Start_Time > ?
+              AND (
+                    s.Session_Type = 'Class'
+                    OR p.Booking_Status <> 'Cancelled'
+              )
+            ORDER BY s.Start_Time ASC
+            """;
+
+        return queryList(sql, ps -> {
+            ps.setInt(1, trainerId);
+            Sql.setDateTime(ps, 2, now);
+        });
+    }
+
 public List<Equipment> findAvailableEquipment(
         Integer roomId,
         LocalDateTime from,

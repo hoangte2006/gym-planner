@@ -2,6 +2,7 @@ package com.gym.facility.service;
 
 import com.gym.app.Session;
 import com.gym.core.dao.PageResult;
+import com.gym.core.dao.SessionDao;
 import com.gym.core.dao.StaffDao;
 import com.gym.core.exception.BusinessException;
 import com.gym.core.model.Manager;
@@ -20,9 +21,11 @@ import java.util.Optional;
 public class StaffService {
 
     private final StaffDao staffDao;
+    private final SessionDao sessionDao;
 
-    public StaffService(StaffDao staffDao) {
+    public StaffService(StaffDao staffDao, SessionDao sessionDao) {
         this.staffDao = Objects.requireNonNull(staffDao, "StaffDao không được null");
+        this.sessionDao = Objects.requireNonNull(sessionDao, "SessionDao không được null");
     }
 
     /** Thêm một STAFF và bảng con tương ứng; transaction nhiều bảng được DAO xử lý. */
@@ -63,9 +66,15 @@ public class StaffService {
         requireStaffAccess(Session.getRole());
 
         requirePositiveId(staffId, "Mã nhân viên");
+
         if (staffDao.findById(staffId).isEmpty()) {
-            throw new BusinessException("Nhân sự không tồn tại hoặc đã bị xóa.");
+            throw new BusinessException("Nhân viên không tồn tại hoặc đã bị xóa.");
         }
+
+        if(!sessionDao.findByTrainer(staffId).isEmpty()) {
+            throw new BusinessException("Nhân viên này đang được tham chiếu");
+        }
+
         // FK MAINTENANCE_LOG.Logged_By cố ý ngăn xóa người đã ký phiếu bảo trì.
         staffDao.deleteById(staffId);
     }
@@ -198,7 +207,7 @@ public class StaffService {
 
     public static void requireStaffAccess(StaffRole role) {
         if (role != StaffRole.MANAGER) {
-            throw new BusinessException("Chỉ Quản lý mới được xem được Staff.");
+            throw new BusinessException("Chỉ Quản lý mới dùng được chức năng này.");
         }
     }
 }
