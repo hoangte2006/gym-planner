@@ -506,7 +506,11 @@ class DashboardDaoTest {
         StaffDao staffDao = new StaffDao();
         Staff signer = staffDao.findByRole(StaffRole.MANAGER).get(0);    // người ký phiếu phải là Quản lý hoặc Lễ tân
         EquipmentDao equipmentDao = new EquipmentDao();
-        MaintenanceLogDao logDao = new MaintenanceLogDao();
+        MaintenanceLogDao logDao = new MaintenanceLogDao() {
+            public List<MaintenanceLog> searchByEquipment(Integer equipmentId, String keyword) {
+                return List.of();
+            }
+        };
 
         Equipment equipment = new Equipment();
         equipment.setEquipmentName("ZZ Dash Equipment " + System.nanoTime() % 1_000_000L);
