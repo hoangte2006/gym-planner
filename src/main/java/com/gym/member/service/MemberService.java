@@ -1,6 +1,10 @@
 package com.gym.member.service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -33,7 +37,6 @@ public class MemberService {
     private final BillingLogDao billingLogDao = new BillingLogDao();
     private final MembershipDao membershipDao = new MembershipDao();
 
-    /** Chỉ Lễ tân và Quản lý mới được thao tác trên module Hội viên */
     private void checkPermission() {
         if (Session.isLoggedIn()) {
             StaffRole role = Session.getRole();
@@ -77,11 +80,9 @@ public class MemberService {
         if (m.getEmail() != null && !m.getEmail().isBlank()) {
             v.email("Email", m.getEmail());
         }
-
         if (m.getBirthDate() != null) {
             v.birthDate("Ngày sinh", m.getBirthDate(), LocalDate.now());
         }
-
         v.throwIfInvalid();
     }
 
@@ -102,7 +103,6 @@ public class MemberService {
     public void deleteMember(int visitorId) {
         checkPermission();
 
-        // BR-MEM-08: Ràng buộc chứng từ tài chính và gói tập
         List<String> blockers = new ArrayList<>();
         List<BillingLog> bills = billingLogDao.findByVisitor(visitorId);
         if (!bills.isEmpty()) {
@@ -137,7 +137,6 @@ public class MemberService {
         BigDecimal finalRate = (rate != null) ? rate : DEFAULT_DAILY_RATE;
         LocalDate finalDate = (visitDate != null) ? visitDate : LocalDate.now();
 
-        // Bọc cả hai DAO vào Tx.run để đảm bảo tính toàn vẹn giao dịch
         Tx.run(() -> {
             DailyPassTicket ticket = new DailyPassTicket();
             ticket.setFirstName(firstName.trim());
@@ -156,5 +155,61 @@ public class MemberService {
             bill.setDueDate(finalDate);
             billingLogDao.insert(bill);
         });
+    }
+
+    /** Nâng cấp vé ngày thành hội viên chính thức */
+   public Member upgradeDailyPassToMember(int visitorId, String email, LocalDate birthDate) {
+        checkPermission();
+
+        DailyPassTicket ticket;
+        try {
+            ticket = dailyPassTicketDao.findById(visitorId)
+                    .orElseThrow(() -> new BusinessException("Không tìm thấy thông tin vé ngày của khách #" + visitorId));
+        } catch (com.gym.core.exception.DataAccessException dae) {
+            throw new BusinessException("Không tìm thấy thông tin vé ngày của khách #" + visitorId);
+        }
+
+        Member newMember = new Member();
+        newMember.setFirstName(ticket.getFirstName());
+        newMember.setLastName(ticket.getLastName());
+        newMember.setPhone(ticket.getPhone());
+        newMember.setEmail(email);
+        newMember.setBirthDate(birthDate);
+        newMember.setRegistrationDate(LocalDateTime.now());
+
+        validate(newMember);
+
+        return Tx.call(() -> {
+            dailyPassTicketDao.deleteById(visitorId);
+            return memberDao.insert(newMember);
+        });
+    }
+
+    /** Xuất danh sách hội viên ra định dạng CSV UTF-8 có BOM */
+    public byte[] exportMembersToCsv(List<Member> members) {
+        checkPermission();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(baos, StandardCharsets.UTF_8))) {
+            baos.write(0xEF);
+            baos.write(0xBB);
+            baos.write(0xBF);
+
+            writer.println("Mã hội viên,Họ,Tên,Số điện thoại,Email,Ngày sinh,Ngày đăng ký");
+            for (Member m : members) {
+                writer.printf("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"%n",
+                        m.getVisitorId(),
+                        m.getLastName() != null ? m.getLastName() : "",
+                        m.getFirstName() != null ? m.getFirstName() : "",
+                        m.getPhone() != null ? m.getPhone() : "",
+                        m.getEmail() != null ? m.getEmail() : "",
+                        m.getBirthDate() != null ? m.getBirthDate().toString() : "",
+                        m.getRegistrationDate() != null ? m.getRegistrationDate().toString() : ""
+                );
+            }
+            writer.flush();
+            return baos.toByteArray();
+        } catch (Exception e) {
+            throw new BusinessException("Không thể xuất tệp CSV: " + e.getMessage());
+        }
     }
 }

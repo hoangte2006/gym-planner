@@ -9,6 +9,7 @@ import java.awt.GridBagLayout;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Window;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -18,11 +19,14 @@ import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
@@ -110,16 +114,44 @@ public class MemberFormDialog extends JDialog {
 
         add(form, BorderLayout.CENTER);
 
-        JPanel pnlBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        JButton btnSave = new JButton("Lưu");
-        JButton btnCancel = new JButton("Hủy");
-        pnlBtns.add(btnSave);
-        pnlBtns.add(btnCancel);
+        // UX-17: Nút trợ giúp giải thích mục đích màn hình
+        JButton btnHelp = new JButton("?");
+        btnHelp.setToolTipText("Mục đích màn hình (UX-17)");
+        btnHelp.addActionListener(e -> {
+            String msg = """
+                    Màn hình thêm mới hoặc cập nhật hồ sơ hội viên.
+                    - Các trường có dấu (*) là bắt buộc (Họ, Tên, Số điện thoại).
+                    - Nhấn phím Enter để Lưu ngay, hoặc nhấn Esc để đóng cửa sổ.
+                    """;
+            JOptionPane.showMessageDialog(this, msg.strip(), "Trợ giúp (UX-17)", JOptionPane.INFORMATION_MESSAGE);
+        });
+
+        JPanel pnlBtns = new JPanel(new BorderLayout());
+        JPanel pnlLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        pnlLeft.add(btnHelp);
+
+        JPanel pnlRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        JButton btnSave = new JButton("Lưu (Enter)");
+        JButton btnCancel = new JButton("Hủy (Esc)");
+        pnlRight.add(btnSave);
+        pnlRight.add(btnCancel);
+
+        pnlBtns.add(pnlLeft, BorderLayout.WEST);
+        pnlBtns.add(pnlRight, BorderLayout.EAST);
         add(pnlBtns, BorderLayout.SOUTH);
 
         btnSave.addActionListener(e -> save());
         btnCancel.addActionListener(e -> dispose());
 
+        // UX-12: Enter = Lưu (nút chính), Esc = Đóng cửa sổ
+        getRootPane().setDefaultButton(btnSave);
+        getRootPane().registerKeyboardAction(
+                e -> dispose(),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+
+        // UX-04: Bắt lỗi định dạng SĐT theo thời gian thực
         txtPhone.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) { checkPhone(); }
