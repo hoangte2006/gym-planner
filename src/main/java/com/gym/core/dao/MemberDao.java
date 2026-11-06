@@ -1,13 +1,13 @@
 package com.gym.core.dao;
 
-import com.gym.core.exception.DataAccessException;
-import com.gym.core.model.Member;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+
+import com.gym.core.exception.DataAccessException;
+import com.gym.core.model.Member;
 
 /**
  * DAO cho Member. Hội viên nằm ở HAI bảng: VISITOR (họ tên, SĐT) và MEMBER (email, ngày sinh, ảnh...),
@@ -111,24 +111,38 @@ public class MemberDao extends AbstractJdbcDao<Member, Integer> {
         execute("DELETE FROM VISITOR WHERE Visitor_ID = ?", ps -> ps.setInt(1, id));
     }
 
-    /** Tìm theo tên, SĐT hoặc email (chứa từ khóa), có phân trang. */
+   /** Tìm theo tên, SĐT hoặc email (chứa từ khóa), có phân trang và tối ưu hiệu năng. */
     public PageResult<Member> search(String keyword, int page, int pageSize) {
         if (page < 1 || pageSize < 1) {
             throw new IllegalArgumentException("Trang và kích thước trang phải từ 1 trở lên.");
         }
-        String like = "%" + (keyword == null ? "" : keyword.trim()) + "%";
-        String where = " WHERE (v.Last_Name + ' ' + v.First_Name) LIKE ? OR v.Phone LIKE ? OR m.Email LIKE ?";
-        StatementBinder filter = ps -> {
-            ps.setString(1, like);
-            ps.setString(2, like);
-            ps.setString(3, like);
-        };
-        long total = count("SELECT COUNT(*) FROM " + FROM + where, filter);
-        List<Member> items = queryList(selectSql() + where + " ORDER BY v.Visitor_ID OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
+
+        String cleanKeyword = (keyword == null) ? "" : keyword.trim();
+        String whereClause;
+        StatementBinder filter;
+
+        if (cleanKeyword.isEmpty()) {
+            whereClause = "";
+            filter = ps -> {};
+        } else {
+            String like = "%" + cleanKeyword + "%";
+            // Tách tìm First_Name, Last_Name độc lập để tận dụng index composite thay vì ghép chuỗi
+            whereClause = " WHERE v.First_Name LIKE ? OR v.Last_Name LIKE ? OR v.Phone LIKE ? OR m.Email LIKE ?";
+            filter = ps -> {
+                ps.setString(1, like);
+                ps.setString(2, like);
+                ps.setString(3, like);
+                ps.setString(4, like);
+            };
+        }
+
+        long total = count("SELECT COUNT(*) FROM " + FROM + whereClause, filter);
+        List<Member> items = queryList(selectSql() + whereClause + " ORDER BY v.Visitor_ID OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
                 ps -> {
                     filter.bind(ps);
-                    ps.setInt(4, (page - 1) * pageSize);
-                    ps.setInt(5, pageSize);
+                    int offsetParamIndex = cleanKeyword.isEmpty() ? 1 : 5;
+                    ps.setInt(offsetParamIndex, (page - 1) * pageSize);
+                    ps.setInt(offsetParamIndex + 1, pageSize);
                 });
         return new PageResult<>(items, page, pageSize, total);
     }
