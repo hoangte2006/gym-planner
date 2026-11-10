@@ -26,14 +26,20 @@ import com.gym.core.ui.Toast;
 
 /** Cảnh báo gói hết hạn trong 7/30 ngày, có số điện thoại liên hệ và màu + chữ cảnh báo. */
 public class ExpiryPanel extends JPanel {
-    private final BillingService service = new BillingService();
+    private final BillingService service;
     private final JComboBox<Integer> days = new JComboBox<>(new Integer[]{7, 30});
     private final ExpiryTableModel model = new ExpiryTableModel();
     private final JTable table = new JTable(model);
     private final JLabel summary = new JLabel("Chọn phạm vi 7 hoặc 30 ngày.");
 
     public ExpiryPanel() {
+        this(new BillingService());
+    }
+
+    /** Cho phép inject service khi kiểm thử UI. */
+    public ExpiryPanel(BillingService service) {
         super(new BorderLayout(8, 8));
+        this.service = service == null ? new BillingService() : service;
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
         top.add(new JLabel("Hiển thị gói sắp hết hạn trong")); top.add(days); top.add(new JLabel("ngày kể từ hôm nay"));
@@ -51,6 +57,23 @@ public class ExpiryPanel extends JPanel {
         add(north, BorderLayout.NORTH);
         add(new JScrollPane(table), BorderLayout.CENTER);
         add(summary, BorderLayout.SOUTH);
+        load();
+    }
+
+    /** Dùng trong kiểm thử để chọn khoảng ngày và tải lại. */
+    public JComboBox<Integer> daysSelector() {
+        return days;
+    }
+
+    public JTable expiryTable() {
+        return table;
+    }
+
+    public JLabel summaryLabel() {
+        return summary;
+    }
+
+    public void reloadNow() {
         load();
     }
 

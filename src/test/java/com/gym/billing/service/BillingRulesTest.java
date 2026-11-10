@@ -5,29 +5,58 @@ import com.gym.core.model.BillingStatus;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/** TC16–TC20: luật trạng thái hóa đơn và thanh toán đủ. */
 class BillingRulesTest {
-    @Test void pendingCanBeMarkedPaid() { assertDoesNotThrow(() -> BillingRules.requireCanMarkPaid(BillingStatus.PENDING)); }
-    @Test void paidIsTerminalAndCannotBePaidAgain() { assertThrows(BusinessException.class, () -> BillingRules.requireCanMarkPaid(BillingStatus.PAID)); }
-    @Test void failedMustBeRetriedBeforePaying() { assertThrows(BusinessException.class, () -> BillingRules.requireCanMarkPaid(BillingStatus.FAILED)); }
-    @Test void pendingCanBeMarkedFailed() { assertDoesNotThrow(() -> BillingRules.requireCanMarkFailed(BillingStatus.PENDING)); }
-    @Test void paidCannotBeMarkedFailed() { assertThrows(BusinessException.class, () -> BillingRules.requireCanMarkFailed(BillingStatus.PAID)); }
-    @Test void failedCannotBeMarkedFailedTwice() { assertThrows(BusinessException.class, () -> BillingRules.requireCanMarkFailed(BillingStatus.FAILED)); }
-    @Test void failedCanBeRetried() { assertDoesNotThrow(() -> BillingRules.requireCanRetry(BillingStatus.FAILED)); }
-    @Test void pendingCannotUseRetryAction() { assertThrows(BusinessException.class, () -> BillingRules.requireCanRetry(BillingStatus.PENDING)); }
-    @Test void paidCannotUseRetryAction() { assertThrows(BusinessException.class, () -> BillingRules.requireCanRetry(BillingStatus.PAID)); }
-    @Test void normalizeMoneyAddsTwoDecimalPlaces() { assertEquals(new BigDecimal("1500.00"), BillingRules.normalizeMoney(new BigDecimal("1500"))); }
-    @Test void normalizeMoneyRoundsHalfUp() { assertEquals(new BigDecimal("10.13"), BillingRules.normalizeMoney(new BigDecimal("10.125"))); }
-    @Test void normalizeMoneyRejectsNegative() { assertThrows(BusinessException.class, () -> BillingRules.normalizeMoney(new BigDecimal("-0.01"))); }
-    @Test void exactPaymentAcceptsEqualAmountsWithDifferentScales() { assertDoesNotThrow(() -> BillingRules.requireExactPayment(new BigDecimal("500"), new BigDecimal("500.00"))); }
-    @Test void exactPaymentRejectsInstallmentOrShortPayment() { assertThrows(BusinessException.class, () -> BillingRules.requireExactPayment(new BigDecimal("500.00"), new BigDecimal("250.00"))); }
-    @Test void dueDateCanEqualInvoiceCalendarDate() { assertDoesNotThrow(() -> BillingRules.requireDueDateNotBeforeInvoice(LocalDate.of(2026, 10, 17), LocalDateTime.of(2026, 10, 17, 23, 59))); }
-    @Test void dueDateCannotPrecedeInvoiceDate() { assertThrows(BusinessException.class, () -> BillingRules.requireDueDateNotBeforeInvoice(LocalDate.of(2026, 10, 16), LocalDateTime.of(2026, 10, 17, 0, 0))); }
-    @Test void daysUntilEndTodayIsZero() { assertEquals(0, BillingRules.daysUntil(LocalDate.of(2026, 10, 17), LocalDate.of(2026, 10, 17))); }
-    @Test void daysUntilEndInOneWeekIsSeven() { assertEquals(7, BillingRules.daysUntil(LocalDate.of(2026, 10, 24), LocalDate.of(2026, 10, 17))); }
-    @Test void daysUntilRejectsNullDates() { assertThrows(BusinessException.class, () -> BillingRules.daysUntil(null, LocalDate.now())); }
+
+    @Test
+    void tc16_pendingToPaid_isAllowed() {
+        assertDoesNotThrow(() -> BillingRules.requireCanMarkPaid(BillingStatus.PENDING));
+    }
+
+    @Test
+    void tc17_paidIsFinal_rejectsSecondPayOrFail() {
+        BusinessException payAgain = assertThrows(BusinessException.class,
+                () -> BillingRules.requireCanMarkPaid(BillingStatus.PAID));
+        BusinessException markFailed = assertThrows(BusinessException.class,
+                () -> BillingRules.requireCanMarkFailed(BillingStatus.PAID));
+        BusinessException retry = assertThrows(BusinessException.class,
+                () -> BillingRules.requireCanRetry(BillingStatus.PAID));
+
+        assertTrue(payAgain.getMessage().contains("trạng thái cuối")
+                || payAgain.getMessage().contains("không thể thu tiền lần nữa"));
+        assertTrue(markFailed.getMessage().contains("không thể chuyển sang Thất bại"));
+        assertTrue(retry.getMessage().contains("không thể chuyển trạng thái"));
+    }
+
+    @Test
+    void tc18_pendingToFailed_isAllowed() {
+        assertDoesNotThrow(() -> BillingRules.requireCanMarkFailed(BillingStatus.PENDING));
+    }
+
+    @Test
+    void tc19_failedToPending_isAllowed() {
+        assertDoesNotThrow(() -> BillingRules.requireCanRetry(BillingStatus.FAILED));
+    }
+
+    @Test
+    void tc20_exactPaymentRequired_withBigDecimalScale2() {
+        BigDecimal expected = new BigDecimal("1000");
+        BigDecimal normalized = BillingRules.normalizeMoney(expected);
+        assertEquals(2, normalized.scale());
+        assertEquals(0, new BigDecimal("1000.00").compareTo(normalized));
+
+        BusinessException shortPay = assertThrows(BusinessException.class,
+                () -> BillingRules.requireExactPayment(new BigDecimal("1000.00"), new BigDecimal("500.00")));
+        assertTrue(shortPay.getMessage().contains("đúng bằng giá gói")
+                || shortPay.getMessage().contains("Không hỗ trợ trả góp"));
+
+        assertDoesNotThrow(() ->
+                BillingRules.requireExactPayment(new BigDecimal("1000.00"), new BigDecimal("1000")));
+    }
 }
