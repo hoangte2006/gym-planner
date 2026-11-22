@@ -2,6 +2,8 @@
 
 Đồ án Lập trình hướng đối tượng (Java Swing) – nhóm Đồng Vui, đề tài số 9.
 
+Báo cáo: [`docs/bao_cao/N24DCCN064_Bao_Cao_Do_An_OOP.pdf`](docs/bao_cao/N24DCCN064_Bao_Cao_Do_An_OOP.pdf) (bản Word: [`.docx`](docs/bao_cao/N24DCCN064_Bao_Cao_Do_An_OOP.docx)).
+
 ## Yêu cầu
 - JDK 17 trở lên
 - Maven 3.9+
